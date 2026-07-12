@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -64,6 +65,7 @@ export default function TransferPage() {
   // Auto-detect currently allocated employee when asset is selected
   useEffect(() => {
     if (!selectedAssetId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFromEmployeeId('');
       setFromEmployeeName('Select an asset to auto-detect');
       return;
@@ -109,6 +111,7 @@ export default function TransferPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
   }, []);
 

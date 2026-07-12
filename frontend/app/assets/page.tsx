@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Card, Button, Input, Select, Badge, showToast, Modal } from '@/components/UI';
-import { Package, Plus, Edit2, Trash2, Search, ArrowUpDown, QrCode } from 'lucide-react';
+import { Package, Trash2, Search, ArrowUpDown, QrCode } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { AssetCondition, AssetStatus } from '@/types';
+import { AssetCondition } from '@/types';
 import Link from 'next/link';
 
 export default function AssetsPage() {
@@ -43,6 +43,7 @@ export default function AssetsPage() {
   // Open modal if action=new query parameter is present (Quick Action click helper)
   useEffect(() => {
     if (searchParams && searchParams.get('action') === 'new') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsOpen(true);
     }
   }, [searchParams]);

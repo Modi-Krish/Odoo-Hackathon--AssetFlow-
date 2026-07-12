@@ -5,5 +5,5 @@ export interface Report {
   description: string;
   generatedAt: string;
   csvUrl?: string;
-  data: Array<Record<string, any>>;
+  data: Array<Record<string, unknown>>;
 }

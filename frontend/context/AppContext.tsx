@@ -18,7 +18,8 @@ import {
   AssetCondition,
   TransferStatus,
   BookingStatus,
-  MaintenanceStatus
+  MaintenanceStatus,
+  Report
 } from '../types';
 
 interface AppContextType {
@@ -220,7 +221,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   // Sync to LocalStorage helper
-  const sync = (key: string, data: any) => {
+  const sync = (key: string, data: unknown) => {
     localStorage.setItem(key, JSON.stringify(data));
   };
 
@@ -497,14 +498,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // 1. Mark existing allocation as returned
     const activeAllocIdx = allocations.findIndex(al => al.asset_id === req.asset_id && !al.returned);
+    const currentAllocations = [...allocations];
     if (activeAllocIdx !== -1) {
-      allocations[activeAllocIdx] = {
-        ...allocations[activeAllocIdx],
+      currentAllocations[activeAllocIdx] = {
+        ...currentAllocations[activeAllocIdx],
         returned: true,
         return_date: new Date().toISOString().split('T')[0],
         condition_check: 'Transferred'
       };
-      sync('af_allocations', allocations);
+      sync('af_allocations', currentAllocations);
     }
 
     // 2. Create new allocation record
@@ -516,7 +518,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       allocation_date: new Date().toISOString().split('T')[0],
       returned: false
     };
-    const updatedAllocations = [...allocations, newAlloc];
+    const updatedAllocations = [...currentAllocations, newAlloc];
     setAllocations(updatedAllocations);
     sync('af_allocations', updatedAllocations);
 

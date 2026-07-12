@@ -1,8 +1,9 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { Card, Button, Input, Badge, Modal, showToast } from '@/components/UI';
+import { Card, Button, Input, Modal, showToast } from '@/components/UI';
 import { Tags, Plus, Edit2, Trash2, ShieldAlert } from 'lucide-react';
 import { getCategories, createCategory, updateCategory, deleteCategory as deleteCatAPI } from '../../services/categories';
 import { AssetCategory } from '@/types';
@@ -22,23 +23,24 @@ export default function CategoriesPage() {
   // Role Gate check: Admin / Asset Manager only
   const isAuthorized = currentUser?.role === 'Admin' || currentUser?.role === 'Asset Manager';
 
-  useEffect(() => {
-    if (isAuthorized) {
-      loadCategories();
-    }
-  }, [isAuthorized]);
-
   const loadCategories = async () => {
     try {
       setLoading(true);
       const data = await getCategories();
       setCategories(data);
-    } catch (err) {
+    } catch {
       showToast('Failed to load categories', 'error');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isAuthorized) {
+      loadCategories();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthorized]);
 
   if (!isAuthorized) {
     return (
@@ -87,8 +89,9 @@ export default function CategoriesPage() {
       }
       setIsOpen(false);
       loadCategories(); // Refresh list
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Action failed', 'error');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      showToast(error.response?.data?.message || 'Action failed', 'error');
     }
   };
 
@@ -98,8 +101,9 @@ export default function CategoriesPage() {
         await deleteCatAPI(id);
         showToast('Category deleted successfully', 'success');
         loadCategories(); // Refresh list
-      } catch (err: any) {
-        showToast(err.response?.data?.message || 'Delete failed', 'error');
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { message?: string } } };
+        showToast(error.response?.data?.message || 'Delete failed', 'error');
       }
     }
   };

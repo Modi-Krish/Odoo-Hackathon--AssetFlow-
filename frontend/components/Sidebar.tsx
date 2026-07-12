@@ -18,7 +18,12 @@ import {
   ChevronRight, 
   Menu, 
   X,
-  ClipboardCheck
+  ClipboardCheck,
+  Briefcase,
+  Settings,
+  ChevronLeft,
+  User,
+  ShieldAlert
 } from 'lucide-react';
 import { Badge } from './UI';
 
@@ -139,7 +144,7 @@ export const Sidebar: React.FC = () => {
 
       {/* Desktop Sidebar wrapper */}
       <aside className={`hidden md:block h-screen fixed left-0 top-0 transition-all duration-300 z-30 ${collapsed ? 'w-20' : 'w-64'}`}>
-        <SidebarContent />
+        {SidebarContent()}
       </aside>
 
       {/* Mobile Sidebar overlay menu */}
@@ -151,7 +156,7 @@ export const Sidebar: React.FC = () => {
             onClick={() => setMobileOpen(false)}
           />
           <div className="relative w-64 h-full z-10">
-            <SidebarContent />
+            {SidebarContent()}
           </div>
         </div>
       )}

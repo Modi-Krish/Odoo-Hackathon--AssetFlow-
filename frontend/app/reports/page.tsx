@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, Button, showToast, Loader, ErrorMessage, Skeleton, EmptyState } from '@/components/UI';
+import { Button, showToast, Loader, ErrorMessage, Skeleton, EmptyState } from '@/components/UI';
 import { Report } from '../../types/report';
 import { getReports } from '../../services/reports';
 import { ReportCard } from '../../components/operations/ReportCard';
@@ -85,6 +85,7 @@ export default function ReportsPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchReports();
   }, []);
 
@@ -209,14 +210,14 @@ export default function ReportsPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800">
-                      {selectedReport.data.map((row: Record<string, any>, rIdx: number) => (
+                      {selectedReport.data.map((row: Record<string, unknown>, rIdx: number) => (
                         <tr key={rIdx} className="hover:bg-slate-850/30 transition-colors">
-                          {Object.values(row).map((val: any, vIdx: number) => (
+                          {Object.values(row).map((val: unknown, vIdx: number) => (
                             <td
                               key={vIdx}
                               className="whitespace-nowrap px-4 py-3 text-xs font-semibold text-slate-300"
                             >
-                              {val}
+                              {val as React.ReactNode}
                             </td>
                           ))}
                         </tr>

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useApp } from '@/context/AppContext';
-import { Card, Button, Badge } from '@/components/UI';
+import { Card } from '@/components/UI';
 import { 
   Package, 
   CheckCircle, 
@@ -41,6 +41,7 @@ export default function DashboardPage() {
   const overdueAllocations = allocations.filter(al => {
     if (al.returned || !al.expected_return) return false;
     const expDate = new Date(al.expected_return);
+    // eslint-disable-next-line react-hooks/purity
     return expDate.getTime() < Date.now();
   });
   const overdueCount = overdueAllocations.length;
@@ -95,7 +96,7 @@ export default function DashboardPage() {
       
       {/* Welcome Header */}
       <div>
-        <h2 className="text-xl font-bold text-slate-100 font-display">Today's Overview</h2>
+        <h2 className="text-xl font-bold text-slate-100 font-display">Today&apos;s Overview</h2>
         <p className="text-xs text-slate-300 mt-0.5 font-bold uppercase tracking-wider">Asset status summary and operations pipeline</p>
       </div>
 

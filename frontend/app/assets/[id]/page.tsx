@@ -2,7 +2,7 @@
 
 import React, { use, useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { Card, Button, Badge, showToast } from '@/components/UI';
+import { Card, Button, Badge } from '@/components/UI';
 import { 
   ArrowLeft, 
   CalendarRange, 
@@ -12,7 +12,6 @@ import {
   Calendar, 
   Tag, 
   Clock, 
-  History,
   AlertTriangle 
 } from 'lucide-react';
 import Link from 'next/link';
@@ -30,6 +29,7 @@ export default function AssetDetailsPage({ params }: { params: Promise<{ id: str
   } = useApp();
 
   const asset = assets.find(a => a.id === id);
+  const [activeTab, setActiveTab] = useState<'allocations' | 'maintenance' | 'bookings'>('allocations');
 
   if (!asset) {
     return (
@@ -60,8 +60,6 @@ export default function AssetDetailsPage({ params }: { params: Promise<{ id: str
   const assetBookings = bookings
     .filter(b => b.asset_id === asset.id)
     .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
-
-  const [activeTab, setActiveTab] = useState<'allocations' | 'maintenance' | 'bookings'>('allocations');
 
   return (
     <div className="space-y-6">
@@ -182,7 +180,7 @@ export default function AssetDetailsPage({ params }: { params: Promise<{ id: str
                             <span>Date: {new Date(al.allocation_date).toLocaleDateString()}</span>
                             {al.expected_return && <span>- Expected Return: {new Date(al.expected_return).toLocaleDateString()}</span>}
                           </p>
-                          {al.condition_check && <p className="text-[10px] text-slate-500 mt-1">Return Notes: "{al.condition_check}"</p>}
+                          {al.condition_check && <p className="text-[10px] text-slate-500 mt-1">Return Notes: &quot;{al.condition_check}&quot;</p>}
                         </div>
                         <Badge content={al.returned ? 'Returned' : 'Active'} />
                       </div>
@@ -196,7 +194,9 @@ export default function AssetDetailsPage({ params }: { params: Promise<{ id: str
             {activeTab === 'maintenance' && (
               <div className="space-y-4">
                 {assetMaintenance.length === 0 ? (
-                  <p className="text-slate-500 text-xs italic py-8 text-center font-semibold">No maintenance records logged.</p>
+                  <p className="text-slate-400 text-xs text-center p-8 bg-slate-900/50 rounded-xl border border-slate-800/50">
+                    No maintenance records found. The asset is in good condition!
+                  </p>
                 ) : (
                   assetMaintenance.map(req => (
                     <div key={req.id} className="p-3.5 rounded-xl bg-slate-950/50 border border-slate-800/40 text-xs space-y-2">
