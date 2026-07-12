@@ -1,54 +1,66 @@
 # AssetFlow – Enterprise Asset & Resource Management System
 
-> Odoo Hackathon v1.0
+> Built for the **Odoo Hackathon 2026**
 
-A centralized ERP platform for managing departments, employees, assets, allocations, maintenance, resource booking, reports, and notifications.
+A centralized, real-time ERP platform designed to seamlessly manage departments, employees, physical assets, hardware allocations, resource booking, audits, and maintenance workflows. 
 
-## Tech Stack
+## 🌟 Key Features
+
+- **Asset Registration & Allocation**: End-to-end lifecycle management of all hardware and software resources.
+- **Resource Booking**: Self-service portals for employees to request assets and book temporary hardware.
+- **Maintenance & Auditing**: Scheduled compliance audits and automated maintenance ticketing.
+- **Data Aggregation & Reporting Engine**: Dynamic dashboards with rich analytics on asset utilization and depreciation.
+- **Global Notification Architecture**: Real-time alerts for approvals, transfers, and maintenance updates.
+
+## 🛠 Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Next.js 15+, React 19, TypeScript, Tailwind CSS, Shadcn UI |
-| Backend | Node.js, Express.js, TypeScript |
-| Database | PostgreSQL (Supabase) |
-| Auth | JWT + bcrypt |
+| **Frontend** | Next.js 15+, React 19, TypeScript, Tailwind CSS, Shadcn UI |
+| **Backend** | Node.js, Express.js, TypeScript |
+| **Database** | PostgreSQL (Supabase) |
+| **Auth** | JWT + bcrypt Secure Authentication |
 
-## Getting Started
+## 🚀 Getting Started
 
-### Backend
+### 1. Database Setup
+
+We use Supabase for our PostgreSQL database. You can execute our schema and seed files to initialize your tables:
+```bash
+# Run schema and seed against your PostgreSQL database
+psql -U postgres -d assetflow -f database/schema.sql
+psql -U postgres -d assetflow -f database/seed.sql
+```
+Alternatively, the backend uses a script to auto-initialize the database on startup!
+
+### 2. Backend Server
 
 ```bash
 cd backend
 npm install
-cp .env.example .env   # Fill in your values
+# Ensure you configure your Supabase connection string in .env
+cp .env.example .env   
 npm run dev
 ```
+*The API runs at: `http://localhost:5000/api`*
 
-### Database
+### 3. Frontend Server
 
 ```bash
-# Run schema against your PostgreSQL
-psql -U postgres -d assetflow -f database/schema.sql
-psql -U postgres -d assetflow -f database/seed.sql
+cd frontend
+npm install
+npm run dev
 ```
+*The Client runs at: `http://localhost:3000`*
 
-## API Base URL
+## 👥 The Team
 
-```
-http://localhost:5000/api
-```
-
-## Team
-
-- **Krish** – Team Lead (Backend, DB, Auth, APIs, Deployment)
+- **Krish (Member 1)** – Team Lead, System Architecture, DB Design, Reporting Engine, Notifications
 - **Member 2** – UI Developer
-- **Member 3** – Asset Management
-- **Member 4** – Operations
+- **Anand Pandey (Member 3)** – Asset Management & API Integrations
+- **Nipun Kulshrestha (Member 4)** – Operations, Audits, & Maintenance Flows
 
-## Git Workflow
+## 🌿 Git Workflow
 
-- `main` – Production
-- `backend` – Backend development
-- `frontend` – Frontend development
-- `asset-module` – Asset management features
-- `operations-module` – Operations features
+- `main` – Production branch containing all integration code.
+- Features are pushed sequentially by team members throughout the hackathon!
