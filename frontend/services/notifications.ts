@@ -2,7 +2,7 @@ import apiClient from './api';
 import { Notification } from '../types/notification';
 
 export const getNotifications = async (): Promise<Notification[]> => {
-  const response = await apiClient.get<{ success: boolean; data: Notification[] }>('/notifications');
+  const response = await apiClient.get<any>('/notifications');
   return response.data.data;
 };
 

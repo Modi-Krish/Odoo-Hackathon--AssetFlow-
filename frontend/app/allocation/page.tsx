@@ -111,12 +111,12 @@ export default function AllocationPage() {
     .sort((a, b) => new Date(b.allocation_date).getTime() - new Date(a.allocation_date).getTime());
 
   // Submit allocation
-  const handleAllocateSubmit = (e: React.FormEvent) => {
+  const handleAllocateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!allocAssetId) return showToast('Please select an asset', 'error');
     if (!allocEmployeeId) return showToast('Please select an employee', 'error');
 
-    const res = allocateAsset(allocAssetId, allocEmployeeId, expectedReturn || undefined);
+    const res = await allocateAsset(allocAssetId, allocEmployeeId, expectedReturn || undefined);
     if (res.success) {
       showToast(res.message, 'success');
       setAllocAssetId('');
@@ -128,12 +128,12 @@ export default function AllocationPage() {
   };
 
   // Submit inline transfer request (Screen 5)
-  const handleInlineTransferSubmit = (e: React.FormEvent) => {
+  const handleInlineTransferSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!allocAssetId) return showToast('Asset is missing', 'error');
     if (!allocEmployeeId) return showToast('Please select the employee to transfer to', 'error');
 
-    const res = requestTransfer(allocAssetId, allocEmployeeId);
+    const res = await requestTransfer(allocAssetId, allocEmployeeId);
     if (res.success) {
       showToast(`Transfer request created. Reason: "${transferReason || 'Standard transfer'}"`, 'success');
       setAllocAssetId('');
@@ -145,12 +145,12 @@ export default function AllocationPage() {
   };
 
   // Submit return
-  const handleReturnSubmit = (e: React.FormEvent) => {
+  const handleReturnSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!returnAssetId) return showToast('Please select an asset to return', 'error');
     if (!returnNotes.trim()) return showToast('Please enter return condition notes', 'error');
 
-    const res = returnAsset(returnAssetId, returnCondition, returnNotes);
+    const res = await returnAsset(returnAssetId, returnCondition, returnNotes);
     if (res.success) {
       showToast(res.message, 'success');
       setReturnAssetId('');
@@ -161,12 +161,12 @@ export default function AllocationPage() {
   };
 
   // Submit tabbed transfer request
-  const handleTabbedTransferSubmit = (e: React.FormEvent) => {
+  const handleTabbedTransferSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!transferAssetId) return showToast('Please select an asset to transfer', 'error');
     if (!transferToEmployeeId) return showToast('Please select the receiving employee', 'error');
 
-    const res = requestTransfer(transferAssetId, transferToEmployeeId);
+    const res = await requestTransfer(transferAssetId, transferToEmployeeId);
     if (res.success) {
       showToast(res.message, 'success');
       setTransferAssetId('');
@@ -176,8 +176,8 @@ export default function AllocationPage() {
     }
   };
 
-  const handleApproveTransfer = (id: string) => {
-    const res = approveTransfer(id);
+  const handleApproveTransfer = async (id: string) => {
+    const res = await approveTransfer(id);
     if (res.success) {
       showToast(res.message, 'success');
     } else {
@@ -185,8 +185,8 @@ export default function AllocationPage() {
     }
   };
 
-  const handleRejectTransfer = (id: string) => {
-    const res = rejectTransfer(id);
+  const handleRejectTransfer = async (id: string) => {
+    const res = await rejectTransfer(id);
     if (res.success) {
       showToast(res.message, 'success');
     } else {

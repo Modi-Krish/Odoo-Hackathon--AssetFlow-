@@ -36,12 +36,12 @@ export default function MaintenancePage() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleSubmitRequest = (e: React.FormEvent) => {
+  const handleSubmitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedAssetId) return showToast('Please select an asset', 'error');
     if (!issueDescription.trim()) return showToast('Please describe the issue', 'error');
 
-    const res = raiseMaintenance(selectedAssetId, issueDescription, priorityLevel);
+    const res = await raiseMaintenance(selectedAssetId, issueDescription, priorityLevel);
     if (res.success) {
       showToast(res.message, 'success');
       setSelectedAssetId('');
@@ -53,12 +53,12 @@ export default function MaintenancePage() {
     }
   };
 
-  const handleAssignTechSubmit = (e: React.FormEvent) => {
+  const handleAssignTechSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!assigningId) return;
     if (!techName.trim()) return showToast('Technician name is required', 'error');
 
-    const res = updateMaintenanceStatus(assigningId, 'Technician Assigned', techName);
+    const res = await updateMaintenanceStatus(assigningId, 'Technician Assigned', techName);
     if (res.success) {
       showToast('Technician assigned successfully', 'success');
       setAssigningId(null);

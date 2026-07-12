@@ -4,22 +4,22 @@ import { AssetCategory } from '../types';
 const API_BASE_URL = typeof process !== 'undefined' ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api') : 'http://localhost:5000/api';
 
 export const getCategories = async (): Promise<AssetCategory[]> => {
-  const response = await apiClient.get<AssetCategory[]>('/categories');
+  const response = await apiClient.get<any>('/categories');
   return response.data.data;
 };
 
 export const getCategoryById = async (id: string): Promise<AssetCategory> => {
-  const response = await apiClient.get<AssetCategory>(`/categories/${id}`);
+  const response = await apiClient.get<any>(`/categories/${id}`);
   return response.data.data;
 };
 
 export const createCategory = async (data: Omit<AssetCategory, 'id' | 'created_at' | 'updated_at'>): Promise<AssetCategory> => {
-  const response = await apiClient.post<AssetCategory>('/categories', data);
+  const response = await apiClient.post<any>('/categories', data);
   return response.data.data;
 };
 
 export const updateCategory = async (id: string, data: Partial<AssetCategory>): Promise<AssetCategory> => {
-  const response = await apiClient.put<AssetCategory>(`/categories/${id}`, data);
+  const response = await apiClient.put<any>(`/categories/${id}`, data);
   return response.data.data;
 };
 

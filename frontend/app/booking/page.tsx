@@ -38,7 +38,7 @@ export default function BookingPage() {
     loadBookingData();
   }, []);
 
-  const handleBookingSubmit = (e: React.FormEvent) => {
+  const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedAssetId) return showToast('Please select a resource', 'error');
     if (!startTime) return showToast('Start time is required', 'error');
@@ -49,7 +49,7 @@ export default function BookingPage() {
       return showToast('End time must be after start time', 'error');
     }
 
-    const res = bookResource(selectedAssetId, startTime, endTime);
+    const res = await bookResource(selectedAssetId, startTime, endTime);
     if (res.success) {
       showToast(res.message, 'success');
       setStartTime('');

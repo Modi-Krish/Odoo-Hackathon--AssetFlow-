@@ -30,13 +30,13 @@ export default function AuditPage() {
   // Verification Counts
   const flaggedCount = activeAuditItems.filter(item => item.status === 'Missing' || item.status === 'Damaged').length;
 
-  const handleStartAudit = (e: React.FormEvent) => {
+  const handleStartAudit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cycleName.trim()) return showToast('Audit Name is required', 'error');
     if (!scopeValue) return showToast('Scope target value is required', 'error');
     if (!auditorId) return showToast('Auditor is required', 'error');
 
-    const res = createAuditCycle(cycleName, scopeType, scopeValue, auditorId);
+    const res = await createAuditCycle(cycleName, scopeType, scopeValue, auditorId);
     if (res.success) {
       showToast(res.message, 'success');
       setCycleName('');
