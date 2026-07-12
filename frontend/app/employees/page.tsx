@@ -22,12 +22,12 @@ export default function EmployeesPage() {
   // Form states
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<UserRole>('Employee');
+  const [role, setRole] = useState<UserRole>('employee');
   const [departmentId, setDepartmentId] = useState('');
   const [status, setStatus] = useState(true);
 
   // Role Gate check: Admin only (PRD screen 2)
-  if (currentUser?.role !== 'Admin') {
+  if (currentUser?.role !== 'admin') {
     return (
       <Card className="max-w-xl mx-auto mt-12 text-center p-8 border-rose-500/20 bg-rose-950/5">
         <ShieldAlert size={48} className="mx-auto text-rose-400 mb-4 animate-bounce" />
@@ -44,7 +44,7 @@ export default function EmployeesPage() {
     setEditingId(null);
     setName('');
     setEmail('');
-    setRole('Employee');
+    setRole('employee');
     setDepartmentId('');
     setStatus(true);
     setIsOpen(true);
@@ -125,10 +125,10 @@ export default function EmployeesPage() {
   ];
 
   const roleOptions = [
-    { value: 'Admin', label: 'Admin' },
-    { value: 'Asset Manager', label: 'Asset Manager' },
-    { value: 'Department Head', label: 'Department Head' },
-    { value: 'Employee', label: 'Employee' },
+    { value: 'admin', label: 'admin' },
+    { value: 'asset_manager', label: 'asset_manager' },
+    { value: 'department_head', label: 'department_head' },
+    { value: 'employee', label: 'employee' },
   ];
 
   return (

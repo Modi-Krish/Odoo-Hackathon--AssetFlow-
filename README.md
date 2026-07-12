@@ -1,66 +1,85 @@
-# AssetFlow – Enterprise Asset & Resource Management System
+# AssetFlow Enterprise Monorepo
 
-> Built for the **Odoo Hackathon 2026**
+<div align="center">
+  <img src="https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js" alt="Next.js" />
+  <img src="https://img.shields.io/badge/Express-4.x-black?style=for-the-badge&logo=express" alt="Express" />
+  <img src="https://img.shields.io/badge/PostgreSQL-16-blue?style=for-the-badge&logo=postgresql" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/TypeScript-5.x-blue?style=for-the-badge&logo=typescript" alt="TypeScript" />
+</div>
 
-A centralized, real-time ERP platform designed to seamlessly manage departments, employees, physical assets, hardware allocations, resource booking, audits, and maintenance workflows. 
+<br />
+
+AssetFlow is an enterprise-grade Asset & Resource Management System. It allows companies to track hardware, assign assets to employees, book shared resources (like meeting rooms), and manage maintenance requests seamlessly.
 
 ## 🌟 Key Features
 
-- **Asset Registration & Allocation**: End-to-end lifecycle management of all hardware and software resources.
-- **Resource Booking**: Self-service portals for employees to request assets and book temporary hardware.
-- **Maintenance & Auditing**: Scheduled compliance audits and automated maintenance ticketing.
-- **Data Aggregation & Reporting Engine**: Dynamic dashboards with rich analytics on asset utilization and depreciation.
-- **Global Notification Architecture**: Real-time alerts for approvals, transfers, and maintenance updates.
+- **RBAC Authentication:** Full Role-Based Access Control (`admin`, `asset_manager`, `department_head`, `employee`).
+- **Asset Directory:** Track laptops, servers, and accessories.
+- **Resource Booking:** Conflict-free reservations for meeting rooms and shared devices.
+- **Maintenance Ticketing:** End-to-end IT service request management.
+- **Enterprise Reporting:** Advanced visualizations and audit trails.
 
-## 🛠 Tech Stack
+## 🏗 Architecture & Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| **Frontend** | Next.js 15+, React 19, TypeScript, Tailwind CSS, Shadcn UI |
-| **Backend** | Node.js, Express.js, TypeScript |
-| **Database** | PostgreSQL (Supabase) |
-| **Auth** | JWT + bcrypt Secure Authentication |
+This project is a Monorepo composed of two independent applications:
 
-## 🚀 Getting Started
+- **Frontend (`/frontend`)**: Next.js (App Router), React, TailwindCSS, Lucide Icons, Axios.
+- **Backend (`/backend`)**: Node.js, Express.js, PostgreSQL (pg driver), Zod Validation, JWT Auth.
+- **Database (`/database`)**: Raw SQL schemas with secure RLS policies (designed for Supabase compatibility).
 
-### 1. Database Setup
+## 🚀 Getting Started Locally
 
-We use Supabase for our PostgreSQL database. You can execute our schema and seed files to initialize your tables:
+### Prerequisites
+- Node.js (v18+)
+- PostgreSQL (v14+)
+
+### 1. Clone the repository
 ```bash
-# Run schema and seed against your PostgreSQL database
-psql -U postgres -d assetflow -f database/schema.sql
-psql -U postgres -d assetflow -f database/seed.sql
+git clone https://github.com/your-org/assetflow.git
+cd assetflow
 ```
-Alternatively, the backend uses a script to auto-initialize the database on startup!
 
-### 2. Backend Server
+### 2. Install Dependencies
+This project uses npm workspaces to manage both frontend and backend dependencies simultaneously.
+```bash
+npm install
+```
 
+### 3. Environment Setup
+Copy the example environment file and fill in your local Postgres database URL and a strong JWT secret.
+```bash
+cp .env.example .env
+```
+Ensure your `DATABASE_URL` is set correctly in `.env`.
+
+### 4. Database Setup
+Initialize the database using the provided schema.
 ```bash
 cd backend
-npm install
-# Ensure you configure your Supabase connection string in .env
-cp .env.example .env   
-npm run dev
+npm run db:init
+npm run db:seed
 ```
-*The API runs at: `http://localhost:5000/api`*
 
-### 3. Frontend Server
-
+### 5. Run the Application
+From the root directory, start both the frontend and backend in development mode:
 ```bash
-cd frontend
-npm install
 npm run dev
 ```
-*The Client runs at: `http://localhost:3000`*
+- Frontend will be available at `http://localhost:3000`
+- Backend will be available at `http://localhost:5000`
 
-## 👥 The Team
+## 🔒 Security
 
-- **Krish (Member 1)** – Team Lead, System Architecture, DB Design, Reporting Engine, Notifications
-- **Member 2** – UI Developer
-- **Anand Pandey (Member 3)** – Asset Management & API Integrations
-- **Nipun Kulshrestha (Member 4)** – Operations, Audits, & Maintenance Flows
+We take security seriously. Please read our [SECURITY.md](SECURITY.md) for vulnerability reporting guidelines and best practices.
 
-## 🌿 Git Workflow
+- No hardcoded secrets. All sensitive keys are managed via `.env`.
+- Database utilizes Row Level Security (RLS).
+- API is protected with strict CORS, Rate Limiting, and Helmet headers.
 
-- `main` – Production branch containing all integration code.
-- Features are pushed sequentially by team members throughout the hackathon!
+## 🤝 Contributing
+
+We welcome contributions! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to submit pull requests, and remember to follow our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

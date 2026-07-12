@@ -233,28 +233,31 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      {/* Backdrop with soft blur */}
-      <div 
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300" 
-        onClick={onClose}
-      />
       
-      {/* Neumorphic Modal Chassis */}
-      <div className="relative w-full max-w-lg rounded-[32px] bg-slate-900 p-8 shadow-extruded border border-white/20 transition-all duration-300 scale-100 flex flex-col max-h-[90vh] z-10 animate-fade-in">
+      
+      {/* Modal card — white surface with neumorphic shadow */}
+      <div
+        className="relative w-full max-w-lg rounded-[32px] p-8 border border-white/60 transition-all duration-300 scale-100 flex flex-col max-h-[90vh] z-10 animate-fade-in"
+        style={{
+          backgroundColor: '#f0f4f8',
+          boxShadow: '9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.8)',
+        }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between pb-5 mb-5 border-b border-slate-700/20">
           <h3 className="text-base font-bold text-slate-100 font-display">{title}</h3>
           
-          {/* Circular Close Button (tactile hover) */}
+          {/* Circular Close Button */}
           <button 
             onClick={onClose}
-            className="text-slate-400 hover:text-indigo-600 p-2.5 bg-slate-900 rounded-full shadow-extruded hover:shadow-extruded-sm active:shadow-inset-sm transition-all"
+            className="text-slate-400 hover:text-indigo-600 p-2.5 rounded-full shadow-extruded hover:shadow-extruded-sm active:shadow-inset-sm transition-all"
+            style={{ backgroundColor: '#e0e5ec' }}
           >
             <X size={16} />
           </button>
         </div>
         
-        {/* Scrollable Recessed Inner Content Container */}
+        {/* Scrollable inner content */}
         <div className="overflow-y-auto flex-1 pr-1">
           {children}
         </div>

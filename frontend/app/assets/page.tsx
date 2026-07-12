@@ -49,7 +49,7 @@ export default function AssetsPage() {
   }, [searchParams]);
 
   // Permission Gate: Asset Managers and Admins can register assets
-  const canRegister = currentUser?.role === 'Admin' || currentUser?.role === 'Asset Manager';
+  const canRegister = currentUser?.role === 'admin' || currentUser?.role === 'asset_manager';
 
   const handleOpenNew = () => {
     if (!canRegister) {

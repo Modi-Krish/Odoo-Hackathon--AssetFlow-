@@ -46,11 +46,11 @@ export default function OrganizationSetupPage() {
   // Employee form states
   const [empName, setEmpName] = useState('');
   const [empEmail, setEmpEmail] = useState('');
-  const [empRole, setEmpRole] = useState<UserRole>('Employee');
+  const [empRole, setEmpRole] = useState<UserRole>('employee');
   const [empDeptId, setEmpDeptId] = useState('');
 
   // Role Gate check: Admin only (PRD Screen 3 "Organization setup (Admin only)")
-  if (currentUser?.role !== 'Admin') {
+  if (currentUser?.role !== 'admin') {
     return (
       <Card className="max-w-xl mx-auto mt-12 text-center p-8 border-none bg-slate-900 shadow-extruded">
         <ShieldAlert size={48} className="mx-auto text-rose-600 mb-4 animate-bounce" />
@@ -152,7 +152,7 @@ export default function OrganizationSetupPage() {
     setEditingId(null);
     setEmpName('');
     setEmpEmail('');
-    setEmpRole('Employee');
+    setEmpRole('employee');
     setEmpDeptId('');
     setIsEmpModalOpen(true);
   };
@@ -514,10 +514,10 @@ export default function OrganizationSetupPage() {
           <Select
             label="Role"
             options={[
-              { value: 'Employee', label: 'Employee' },
-              { value: 'Department Head', label: 'Department Head' },
-              { value: 'Asset Manager', label: 'Asset Manager' },
-              { value: 'Admin', label: 'Admin' }
+              { value: 'employee', label: 'employee' },
+              { value: 'department_head', label: 'department_head' },
+              { value: 'asset_manager', label: 'asset_manager' },
+              { value: 'admin', label: 'admin' }
             ]}
             value={empRole}
             onChange={e => setEmpRole(e.target.value as UserRole)}

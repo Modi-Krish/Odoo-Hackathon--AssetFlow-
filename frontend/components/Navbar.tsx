@@ -57,7 +57,7 @@ export const Navbar: React.FC = () => {
     setNotifOpen(false);
   };
 
-  const rolesList: UserRole[] = ['Admin', 'Asset Manager', 'Department Head', 'Employee'];
+  const rolesList: UserRole[] = ['admin', 'asset_manager', 'department_head', 'employee'];
 
   return (
     <header className="h-20 bg-slate-900/90 px-6 flex items-center justify-between sticky top-0 z-30 shadow-[0_4px_12px_-2px_rgba(163,177,198,0.2)] border-b border-white/20">

@@ -21,7 +21,7 @@ export default function CategoriesPage() {
   const [description, setDescription] = useState('');
 
   // Role Gate check: Admin / Asset Manager only
-  const isAuthorized = currentUser?.role === 'Admin' || currentUser?.role === 'Asset Manager';
+  const isAuthorized = currentUser?.role === 'admin' || currentUser?.role === 'asset_manager';
 
   const loadCategories = async () => {
     try {

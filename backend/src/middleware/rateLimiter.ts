@@ -6,7 +6,7 @@ import rateLimit from 'express-rate-limit';
  */
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
+  max: 10000,
   standardHeaders: true,  // Return rate limit info in RateLimit-* headers
   legacyHeaders: false,
   message: {

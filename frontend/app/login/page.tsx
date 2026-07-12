@@ -15,16 +15,16 @@ export default function LoginPage() {
 
   // Pre-configured test accounts for 1-click hackathon login
   const testAccounts = [
-    { name: 'Admin', email: 'admin@assetflow.com', role: 'Admin' as UserRole },
-    { name: 'Asset Mgr', email: 'manager@assetflow.com', role: 'Asset Manager' as UserRole },
-    { name: 'Dept Head', email: 'head@assetflow.com', role: 'Department Head' as UserRole },
-    { name: 'Employee', email: 'employee@assetflow.com', role: 'Employee' as UserRole },
+    { name: 'admin', email: 'admin@assetflow.com', role: 'admin' as UserRole },
+    { name: 'Asset Mgr', email: 'manager@assetflow.com', role: 'asset_manager' as UserRole },
+    { name: 'Dept Head', email: 'head@assetflow.com', role: 'department_head' as UserRole },
+    { name: 'employee', email: 'employee@assetflow.com', role: 'employee' as UserRole },
   ];
 
   const handleQuickLogin = async (testEmail: string) => {
     setLoading(true);
     try {
-      const res = await login(testEmail);
+      const res = await login(testEmail, 'password123');
       if (res.success) {
         showToast(`Welcome back, ${res.user?.name}!`, 'success');
       } else {
@@ -51,7 +51,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       if (isLogin) {
-        const res = await login(email);
+        const res = await login(email, password);
         if (res.success) {
           showToast(`Welcome back, ${res.user?.name}!`, 'success');
         } else {
@@ -61,7 +61,7 @@ export default function LoginPage() {
         // Sign up automatically derives employee name from email prefix (Screen 1)
         const namePart = email.split('@')[0];
         const derivedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-        const res = await signup(derivedName, email);
+        const res = await signup(derivedName, email, password);
         if (res.success) {
           showToast(res.message, 'success');
           setIsLogin(true);

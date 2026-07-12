@@ -184,7 +184,7 @@ export default function AuditPage() {
 
         {/* Right Panel: Start Audit Cycle & Reports (Admin / Manager only) */}
         <div className="lg:col-span-1 space-y-6">
-          {currentUser?.role === 'Admin' || currentUser?.role === 'Asset Manager' ? (
+          {currentUser?.role === 'admin' || currentUser?.role === 'asset_manager' ? (
             <Card>
               <h3 className="text-sm font-bold text-slate-100 mb-4 font-display">Create Audit Cycle</h3>
               

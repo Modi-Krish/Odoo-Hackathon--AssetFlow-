@@ -341,11 +341,11 @@ export default function AllocationPage() {
                               <div key={al.id} className="flex flex-col gap-1">
                                 {al.returned ? (
                                   <p className="text-slate-300 font-semibold">
-                                    {returnDate} - Returned by <span className="text-slate-100 font-bold">{emp?.name || 'Employee'}</span> - condition: <span className="text-indigo-600 font-extrabold uppercase">{al.condition_check || 'Good'}</span>
+                                    {returnDate} - Returned by <span className="text-slate-100 font-bold">{emp?.name || 'employee'}</span> - condition: <span className="text-indigo-600 font-extrabold uppercase">{al.condition_check || 'Good'}</span>
                                   </p>
                                 ) : (
                                   <p className="text-slate-200 font-semibold">
-                                    {formattedDate} - Allocated to <span className="text-slate-100 font-bold">{emp?.name || 'Employee'}</span> - {dept?.name || 'Engineering'}
+                                    {formattedDate} - Allocated to <span className="text-slate-100 font-bold">{emp?.name || 'employee'}</span> - {dept?.name || 'Engineering'}
                                   </p>
                                 )}
                               </div>
@@ -473,7 +473,7 @@ export default function AllocationPage() {
                       const fromUser = users.find(u => u.id === req.from_employee_id);
                       const toUser = users.find(u => u.id === req.to_employee_id);
 
-                      const canApprove = currentUser?.role === 'Admin' || currentUser?.role === 'Asset Manager';
+                      const canApprove = currentUser?.role === 'admin' || currentUser?.role === 'asset_manager';
 
                       return (
                         <div key={req.id} className="p-5 rounded-[24px] bg-slate-900 shadow-extruded flex flex-col md:flex-row md:items-center md:justify-between gap-4 text-xs">

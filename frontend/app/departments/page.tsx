@@ -25,7 +25,7 @@ export default function DepartmentsPage() {
   const [parentId, setParentId] = useState('');
 
   // Role Gate check: Admin only (PRD screen 2)
-  if (currentUser?.role !== 'Admin') {
+  if (currentUser?.role !== 'admin') {
     return (
       <Card className="max-w-xl mx-auto mt-12 text-center p-8 border-rose-500/20 bg-rose-950/5">
         <ShieldAlert size={48} className="mx-auto text-rose-400 mb-4 animate-bounce" />

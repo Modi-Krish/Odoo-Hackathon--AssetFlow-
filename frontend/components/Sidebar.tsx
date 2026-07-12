@@ -38,15 +38,15 @@ export const Sidebar: React.FC = () => {
   const role = currentUser.role;
 
   const menuItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
-    { name: 'Organization setup', path: '/organization', icon: Building2, roles: ['Admin'] },
-    { name: 'Assets', path: '/assets', icon: Package, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
-    { name: 'Allocation & Transfer', path: '/allocation', icon: CalendarRange, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
-    { name: 'Resource Booking', path: '/booking', icon: Calendar, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
-    { name: 'Maintenance', path: '/maintenance', icon: Wrench, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
-    { name: 'Audit', path: '/audit', icon: ClipboardCheck, roles: ['Admin', 'Asset Manager', 'Department Head'] },
-    { name: 'Reports', path: '/reports', icon: BarChart3, roles: ['Admin', 'Asset Manager', 'Department Head'] },
-    { name: 'Notifications', path: '/notifications', icon: Bell, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
+    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'asset_manager', 'department_head', 'employee'] },
+    { name: 'Organization setup', path: '/organization', icon: Building2, roles: ['admin'] },
+    { name: 'Assets', path: '/assets', icon: Package, roles: ['admin', 'asset_manager', 'department_head', 'employee'] },
+    { name: 'Allocation & Transfer', path: '/allocation', icon: CalendarRange, roles: ['admin', 'asset_manager', 'department_head', 'employee'] },
+    { name: 'Resource Booking', path: '/booking', icon: Calendar, roles: ['admin', 'asset_manager', 'department_head', 'employee'] },
+    { name: 'Maintenance', path: '/maintenance', icon: Wrench, roles: ['admin', 'asset_manager', 'department_head', 'employee'] },
+    { name: 'Audit', path: '/audit', icon: ClipboardCheck, roles: ['admin', 'asset_manager', 'department_head'] },
+    { name: 'Reports', path: '/reports', icon: BarChart3, roles: ['admin', 'asset_manager', 'department_head'] },
+    { name: 'Notifications', path: '/notifications', icon: Bell, roles: ['admin', 'asset_manager', 'department_head', 'employee'] },
   ];
 
   const visibleItems = menuItems.filter(item => item.roles.includes(role));
@@ -67,10 +67,11 @@ export const Sidebar: React.FC = () => {
             </div>
           )}
         </Link>
-        {/* Toggle Collapse Button (Tactile Circle) */}
-        <button 
-          onClick={() => setCollapsed(!collapsed)} 
-          className="hidden md:flex p-2.5 bg-slate-900 rounded-full text-slate-400 hover:text-indigo-600 shadow-extruded hover:shadow-extruded-sm active:shadow-inset-sm transition-all"
+        {/* Collapse toggle button — always inside the sidebar header */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="hidden md:flex p-2 rounded-full text-slate-400 hover:text-indigo-600 shadow-extruded hover:shadow-extruded-sm active:shadow-inset-sm transition-all shrink-0"
+          style={{ backgroundColor: '#e0e5ec' }}
         >
           <ChevronRight size={14} className={`transform transition-transform duration-300 ${collapsed ? '' : 'rotate-180'}`} />
         </button>
@@ -143,7 +144,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Desktop Sidebar wrapper */}
-      <aside className={`hidden md:block h-screen fixed left-0 top-0 transition-all duration-300 z-30 ${collapsed ? 'w-20' : 'w-64'}`}>
+      <aside className={`hidden md:block h-screen fixed left-0 top-0 transition-all duration-300 z-30 ${collapsed ? 'w-24' : 'w-64'}`}>
         {SidebarContent()}
       </aside>
 
@@ -162,7 +163,7 @@ export const Sidebar: React.FC = () => {
       )}
       
       {/* Spacer for layouts */}
-      <div className={`hidden md:block transition-all duration-300 shrink-0 ${collapsed ? 'w-20' : 'w-64'}`} />
+      <div className={`hidden md:block transition-all duration-300 shrink-0 ${collapsed ? 'w-24' : 'w-64'}`} />
     </>
   );
 };

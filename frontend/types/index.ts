@@ -1,4 +1,4 @@
-export type UserRole = 'Admin' | 'Asset Manager' | 'Department Head' | 'Employee';
+export type UserRole = 'admin' | 'asset_manager' | 'department_head' | 'employee';
 
 export interface User {
   id: string;
@@ -76,7 +76,7 @@ export interface Booking {
   created_at: string;
 }
 
-export type MaintenanceStatus = 'Pending' | 'Approved' | 'Technician Assigned' | 'In Progress' | 'Resolved';
+export type MaintenanceStatus = 'Pending' | 'Approved' | 'Rejected' | 'Technician Assigned' | 'In Progress' | 'Resolved';
 export type MaintenancePriority = 'Low' | 'Medium' | 'High' | 'Critical';
 
 export interface MaintenanceRequest {
