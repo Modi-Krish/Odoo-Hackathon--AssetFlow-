@@ -7,33 +7,6 @@ import { getNotifications, markAsRead, deleteNotification } from '../../services
 import { NotificationCard } from '../../components/operations/NotificationCard';
 import { Bell, RefreshCw } from 'lucide-react';
 
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: 'not-01',
-    title: 'Asset Assigned',
-    message: 'Dell XPS Laptop-01 has been assigned to John Doe.',
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Yesterday
-    status: 'Unread',
-    type: 'assignment'
-  },
-  {
-    id: 'not-02',
-    title: 'Maintenance Approved',
-    message: 'Repair request for Monitor-01 has been approved.',
-    createdAt: new Date().toISOString(), // Today
-    status: 'Read',
-    type: 'maintenance'
-  },
-  {
-    id: 'not-03',
-    title: 'Resource Booking Confirmed',
-    message: 'Testing Lab booking for July 15, 2026 is confirmed.',
-    createdAt: new Date().toISOString(), // Today
-    status: 'Unread',
-    type: 'booking'
-  }
-];
-
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -45,14 +18,10 @@ export default function NotificationsPage() {
       setLoading(true);
       setError(null);
       const data = await getNotifications();
-      if (data && data.length > 0) {
-        setNotifications(data);
-      } else {
-        setNotifications(MOCK_NOTIFICATIONS);
-      }
-    } catch (err) {
-      console.warn('API error fetching notifications, loading mock notices', err);
-      setNotifications(MOCK_NOTIFICATIONS);
+      setNotifications(data ?? []);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to load notifications.';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -61,6 +30,7 @@ export default function NotificationsPage() {
   useEffect(() => {
     fetchNotifications();
   }, []);
+
 
   const handleMarkRead = async (id: string) => {
     try {

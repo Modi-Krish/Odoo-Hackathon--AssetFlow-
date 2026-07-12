@@ -16,16 +16,8 @@ export const getNotifications = async (req: Request, res: Response): Promise<voi
       [req.user!.id]
     );
 
-    const unreadCount = await pool.query(
-      `SELECT COUNT(*) as count FROM notifications
-       WHERE user_id = $1 AND read = false`,
-      [req.user!.id]
-    );
-
-    sendSuccess(res, {
-      notifications: result.rows,
-      unread_count: parseInt(unreadCount.rows[0].count),
-    }, 'Notifications fetched successfully.');
+    // Return flat array — frontend service expects data to be the array directly
+    sendSuccess(res, result.rows, 'Notifications fetched successfully.');
   } catch (error) {
     console.error('Get notifications error:', error);
     sendError(res, 'Failed to fetch notifications.');
@@ -60,7 +52,7 @@ export const markAsRead = async (req: Request, res: Response): Promise<void> => 
 };
 
 /**
- * PUT /api/notifications/read-all
+ * PATCH /api/notifications/read-all
  * Mark all notifications as read
  */
 export const markAllAsRead = async (req: Request, res: Response): Promise<void> => {
@@ -75,5 +67,32 @@ export const markAllAsRead = async (req: Request, res: Response): Promise<void> 
   } catch (error) {
     console.error('Mark all read error:', error);
     sendError(res, 'Failed to mark notifications as read.');
+  }
+};
+
+/**
+ * DELETE /api/notifications/:id
+ * Delete a notification — scoped to req.user.id to prevent IDOR
+ */
+export const deleteNotification = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      `DELETE FROM notifications
+       WHERE id = $1 AND user_id = $2
+       RETURNING id`,
+      [id, req.user!.id]
+    );
+
+    if (result.rows.length === 0) {
+      sendError(res, 'Notification not found or access denied.', 404);
+      return;
+    }
+
+    sendSuccess(res, null, 'Notification deleted successfully.');
+  } catch (error) {
+    console.error('Delete notification error:', error);
+    sendError(res, 'Failed to delete notification.');
   }
 };

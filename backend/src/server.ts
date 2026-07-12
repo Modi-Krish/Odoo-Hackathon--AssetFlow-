@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 
 import { errorHandler } from './middleware/errorHandler';
+import { authRateLimiter, generalRateLimiter } from './middleware/rateLimiter';
 
 // Route imports
 import authRoutes from './routes/auth.routes';
@@ -19,30 +20,57 @@ import dashboardRoutes from './routes/dashboard.routes';
 import reportRoutes from './routes/report.routes';
 import notificationRoutes from './routes/notification.routes';
 
-// Load environment variables
+// Load environment variables BEFORE importing jwt utils (which validate JWT_SECRET at import time)
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const PAYLOAD_LIMIT = process.env.REQUEST_PAYLOAD_LIMIT || '1mb';
 
 // ============================================================
-// MIDDLEWARE
+// SECURITY MIDDLEWARE
 // ============================================================
 
-app.use(helmet());
+// Helmet with explicit Content-Security-Policy
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+}));
+
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   credentials: true,
 }));
+
 app.use(morgan('dev'));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: PAYLOAD_LIMIT }));
+app.use(express.urlencoded({ extended: true, limit: PAYLOAD_LIMIT }));
+
+// Apply general rate limiting to all API routes
+app.use('/api/', generalRateLimiter);
 
 // ============================================================
 // ROUTES
 // ============================================================
 
-app.use('/api/auth', authRoutes);
+// Auth routes get a stricter rate limiter
+app.use('/api/auth', authRateLimiter, authRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/categories', categoryRoutes);
