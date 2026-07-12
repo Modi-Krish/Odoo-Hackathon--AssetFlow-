@@ -60,7 +60,7 @@ export const Navbar: React.FC = () => {
   const rolesList: UserRole[] = ['Admin', 'Asset Manager', 'Department Head', 'Employee'];
 
   return (
-    <header className="h-20 bg-slate-950/80 border-b border-slate-900 px-6 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md">
+    <header className="h-20 bg-slate-900/80 border-b border-slate-800/80 px-6 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md">
       {/* Title */}
       <div className="hidden md:block">
         <h1 className="text-lg font-bold text-slate-100 tracking-wide">{getPageTitle()}</h1>

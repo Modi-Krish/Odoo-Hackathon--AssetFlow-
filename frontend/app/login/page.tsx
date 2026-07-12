@@ -82,10 +82,6 @@ export default function LoginPage() {
 
   return (
     <div className="w-full max-w-md px-4">
-      {/* Decorative Glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl -z-10" />
-      <div className="absolute bottom-1/4 left-1/3 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl -z-10" />
-
       {/* Brand Header */}
       <div className="text-center mb-8">
         <div className="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 items-center justify-center shadow-xl shadow-indigo-600/30 mb-4">
