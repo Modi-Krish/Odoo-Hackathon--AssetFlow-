@@ -336,3 +336,88 @@ export const ToastContainer: React.FC = () => {
     </div>
   );
 };
+
+// ==========================
+// LOADER COMPONENT (Tactile Spinner)
+// ==========================
+export const Loader: React.FC<{ message?: string }> = ({ message = 'Loading Data...' }) => {
+  return (
+    <div className="flex flex-col items-center justify-center py-10 space-y-4">
+      <div className="w-12 h-12 rounded-full border-4 border-indigo-600 border-t-transparent animate-spin shadow-lg" />
+      <p className="text-xs font-bold text-slate-400 tracking-widest uppercase">{message}</p>
+    </div>
+  );
+};
+
+// ==========================
+// ERROR MESSAGE COMPONENT (Error Banner Card)
+// ==========================
+export const ErrorMessage: React.FC<{ message: string; onRetry?: () => void }> = ({ message, onRetry }) => {
+  return (
+    <div className="p-6 rounded-[32px] bg-rose-500/10 border border-rose-500/20 text-rose-500 space-y-4">
+      <div className="flex items-center gap-3">
+        <AlertCircle className="flex-shrink-0" size={24} />
+        <div>
+          <h4 className="text-sm font-bold uppercase tracking-wider">Operation Error</h4>
+          <p className="text-xs text-rose-400 mt-1">{message}</p>
+        </div>
+      </div>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold rounded-xl transition-all"
+        >
+          Try Again
+        </button>
+      )}
+    </div>
+  );
+};
+
+// ==========================
+// SKELETON COMPONENT (Pulse Feed Placeholder)
+// ==========================
+export const Skeleton: React.FC<{ className?: string }> = ({ className = 'h-16 w-full' }) => {
+  return (
+    <div className={`bg-slate-800/40 animate-pulse rounded-2xl ${className}`} />
+  );
+};
+
+// ==========================
+// EMPTY STATE COMPONENT (Feedback placeholder)
+// ==========================
+interface EmptyStateProps {
+  title: string;
+  description: string;
+  icon?: React.ReactNode;
+  actionLabel?: string;
+  onAction?: () => void;
+}
+
+export const EmptyState: React.FC<EmptyStateProps> = ({
+  title,
+  description,
+  icon,
+  actionLabel,
+  onAction
+}) => {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 px-6 rounded-[32px] border-2 border-dashed border-slate-800 bg-slate-900/10 text-center max-w-md mx-auto">
+      {icon ? (
+        <div className="mb-4 text-slate-500">{icon}</div>
+      ) : (
+        <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-500 text-lg mb-4">
+          📭
+        </div>
+      )}
+      <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wide mb-1">{title}</h3>
+      <p className="text-xs text-slate-400 max-w-xs leading-relaxed mb-6 font-medium">{description}</p>
+      {actionLabel && onAction && (
+        <Button onClick={onAction} variant="outline" size="sm">
+          {actionLabel}
+        </Button>
+      )}
+    </div>
+  );
+};
+

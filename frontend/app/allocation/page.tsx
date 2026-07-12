@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { Card, Button, Input, Select, Badge, showToast } from '@/components/UI';
-import { CalendarRange, ArrowLeftRight, CheckSquare, History, AlertCircle, ArrowUpRight } from 'lucide-react';
+import { Card, Button, Input, Select, Badge, showToast, Loader, ErrorMessage, Skeleton, EmptyState } from '@/components/UI';
+import { CalendarRange, ArrowLeftRight, CheckSquare, History, AlertCircle, ArrowUpRight, Inbox } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { AssetCondition } from '@/types';
 
@@ -42,6 +42,16 @@ export default function AllocationPage() {
   const [transferAssetId, setTransferAssetId] = useState('');
   const [transferToEmployeeId, setTransferToEmployeeId] = useState('');
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Handle Quick Action trigger
   useEffect(() => {
     if (searchParams && searchParams.get('action') === 'new') {
@@ -50,6 +60,38 @@ export default function AllocationPage() {
       setActiveTab('history');
     }
   }, [searchParams]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2 font-display">
+            <CalendarRange className="text-indigo-600 animate-float" size={22} />
+            <span>Asset Allocation & Transfers</span>
+          </h2>
+          <p className="text-xs text-slate-300 mt-0.5 font-bold uppercase tracking-wider font-sans">Checkout logistics, check-ins, and direct device transfers</p>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-48 w-full" />
+          </div>
+          <div className="lg:col-span-1">
+            <Skeleton className="h-96 w-full" />
+          </div>
+        </div>
+        <Loader message="Loading allocation profiles..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <ErrorMessage message={error} onRetry={() => { setError(null); setLoading(true); }} />
+      </div>
+    );
+  }
 
   // Derived state for the selected asset under checkout
   const selectedAsset = assets.find(a => a.id === allocAssetId);
@@ -462,56 +504,64 @@ export default function AllocationPage() {
           )}
 
           {activeTab === 'history' && (
-            <Card className="p-0 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-700/20 bg-slate-850/40 text-slate-300 font-extrabold uppercase tracking-wider">
-                      <th className="py-4 px-6 font-display">Asset Tag</th>
-                      <th className="py-4 px-6 font-display">Asset Name</th>
-                      <th className="py-4 px-6 font-display">Employee</th>
-                      <th className="py-4 px-6 font-display">Allocation Date</th>
-                      <th className="py-4 px-6 font-display">Expected Return</th>
-                      <th className="py-4 px-6 text-center font-display">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-700/10 text-slate-100 font-bold">
-                    {allocations.map(al => {
-                      const ast = assets.find(a => a.id === al.asset_id);
-                      const emp = users.find(u => u.id === al.employee_id);
-                      const isOverdue = !al.returned && al.expected_return && new Date(al.expected_return).getTime() < Date.now();
+            allocations.length === 0 ? (
+              <EmptyState
+                title="No Allocations Yet"
+                description="No assets have been checked out to employees. Start by allocating an asset on the first tab."
+                icon={<Inbox size={48} className="text-slate-650" />}
+              />
+            ) : (
+              <Card className="p-0 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-700/20 bg-slate-850/40 text-slate-300 font-extrabold uppercase tracking-wider">
+                        <th className="py-4 px-6 font-display">Asset Tag</th>
+                        <th className="py-4 px-6 font-display">Asset Name</th>
+                        <th className="py-4 px-6 font-display">Employee</th>
+                        <th className="py-4 px-6 font-display">Allocation Date</th>
+                        <th className="py-4 px-6 font-display">Expected Return</th>
+                        <th className="py-4 px-6 text-center font-display">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-700/10 text-slate-100 font-bold">
+                      {allocations.map(al => {
+                        const ast = assets.find(a => a.id === al.asset_id);
+                        const emp = users.find(u => u.id === al.employee_id);
+                        const isOverdue = !al.returned && al.expected_return && new Date(al.expected_return).getTime() < Date.now();
 
-                      return (
-                        <tr key={al.id} className={`hover:bg-slate-850/20 transition-all ${isOverdue ? 'bg-rose-500/5' : ''}`}>
-                          <td className="py-4 px-6 text-indigo-600 font-extrabold">{ast?.asset_tag}</td>
-                          <td className="py-4 px-6 text-slate-100">{ast?.name}</td>
-                          <td className="py-4 px-6">{emp?.name}</td>
-                          <td className="py-4 px-6 text-slate-300">{new Date(al.allocation_date).toLocaleDateString()}</td>
-                          <td className="py-4 px-6 text-slate-300">
-                            {al.expected_return ? (
-                              <span className={isOverdue ? 'text-rose-600 font-extrabold animate-pulse' : ''}>
-                                {new Date(al.expected_return).toLocaleDateString()}
-                              </span>
-                            ) : (
-                              '--'
-                            )}
-                          </td>
-                          <td className="py-4 px-6 text-center">
-                            {al.returned ? (
-                              <Badge content="Returned" />
-                            ) : isOverdue ? (
-                              <Badge content="Overdue" />
-                            ) : (
-                              <Badge content="Active" />
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
+                        return (
+                          <tr key={al.id} className={`hover:bg-slate-850/20 transition-all ${isOverdue ? 'bg-rose-500/5' : ''}`}>
+                            <td className="py-4 px-6 text-indigo-600 font-extrabold">{ast?.asset_tag}</td>
+                            <td className="py-4 px-6 text-slate-100">{ast?.name}</td>
+                            <td className="py-4 px-6">{emp?.name}</td>
+                            <td className="py-4 px-6 text-slate-300">{new Date(al.allocation_date).toLocaleDateString()}</td>
+                            <td className="py-4 px-6 text-slate-300">
+                              {al.expected_return ? (
+                                <span className={isOverdue ? 'text-rose-600 font-extrabold animate-pulse' : ''}>
+                                  {new Date(al.expected_return).toLocaleDateString()}
+                                </span>
+                              ) : (
+                                '--'
+                              )}
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              {al.returned ? (
+                                <Badge content="Returned" />
+                              ) : isOverdue ? (
+                                <Badge content="Overdue" />
+                              ) : (
+                                <Badge content="Active" />
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            )
           )}
 
         </div>
