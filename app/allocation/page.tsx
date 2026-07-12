@@ -52,7 +52,7 @@ export default function AllocationPage() {
   }, []);
 
   // Find selected asset details to verify business rule
-  const selectedAsset = assets.find((a) => a.id === selectedAssetId);
+  const selectedAsset = assets.find((a: Asset) => a.id === selectedAssetId);
   const isAssetUnavailable = selectedAsset ? selectedAsset.status !== 'Available' : false;
 
   // Handle Asset Allocation Submit
@@ -80,9 +80,9 @@ export default function AllocationPage() {
       const newAllocation = await allocateAsset(allocationPayload);
 
       // Update local states
-      setAllocations((prev) => [newAllocation, ...prev]);
-      setAssets((prev) =>
-        prev.map((asset) =>
+      setAllocations((prev: Allocation[]) => [newAllocation, ...prev]);
+      setAssets((prev: Asset[]) =>
+        prev.map((asset: Asset) =>
           asset.id === selectedAssetId ? { ...asset, status: 'Allocated' } : asset
         )
       );
@@ -104,9 +104,9 @@ export default function AllocationPage() {
         status: 'Allocated'
       };
 
-      setAllocations((prev) => [fallbackAllocation, ...prev]);
-      setAssets((prev) =>
-        prev.map((asset) =>
+      setAllocations((prev: Allocation[]) => [fallbackAllocation, ...prev]);
+      setAssets((prev: Asset[]) =>
+        prev.map((asset: Asset) =>
           asset.id === selectedAssetId ? { ...asset, status: 'Allocated' } : asset
         )
       );
@@ -130,15 +130,15 @@ export default function AllocationPage() {
       const updatedAllocation = await returnAsset(id);
 
       // Update local allocation list
-      setAllocations((prev) =>
-        prev.map((alloc) => (alloc.id === id ? updatedAllocation : alloc))
+      setAllocations((prev: Allocation[]) =>
+        prev.map((alloc: Allocation) => (alloc.id === id ? updatedAllocation : alloc))
       );
 
       // Update asset availability
-      const returnedAllocation = allocations.find((a) => a.id === id);
+      const returnedAllocation = allocations.find((a: Allocation) => a.id === id);
       if (returnedAllocation) {
-        setAssets((prev) =>
-          prev.map((asset) =>
+        setAssets((prev: Asset[]) =>
+          prev.map((asset: Asset) =>
             asset.id === returnedAllocation.assetId ? { ...asset, status: 'Available' } : asset
           )
         );
@@ -148,13 +148,13 @@ export default function AllocationPage() {
     } catch (err) {
       console.error(err);
       // Fallback for returning asset
-      const returnedAllocation = allocations.find((a) => a.id === id);
+      const returnedAllocation = allocations.find((a: Allocation) => a.id === id);
       if (returnedAllocation) {
-        setAllocations((prev) =>
-          prev.map((alloc) => (alloc.id === id ? { ...alloc, status: 'Returned' } : alloc))
+        setAllocations((prev: Allocation[]) =>
+          prev.map((alloc: Allocation) => (alloc.id === id ? { ...alloc, status: 'Returned' } : alloc))
         );
-        setAssets((prev) =>
-          prev.map((asset) =>
+        setAssets((prev: Asset[]) =>
+          prev.map((asset: Asset) =>
             asset.id === returnedAllocation.assetId ? { ...asset, status: 'Available' } : asset
           )
         );

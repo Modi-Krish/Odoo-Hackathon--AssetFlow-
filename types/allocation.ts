@@ -18,3 +18,11 @@ export interface Employee {
   name: string;
   email: string;
 }
+
+export interface Transfer {
+  id: string;
+  assetId: string;
+  fromEmployee: string;
+  toEmployee: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+}
