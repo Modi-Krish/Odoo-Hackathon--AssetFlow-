@@ -4,10 +4,10 @@ import React, { useEffect, useState } from 'react';
 import { X, CheckCircle, AlertTriangle, Info, AlertCircle } from 'lucide-react';
 
 // ==========================
-// CARD COMPONENT
+// CARD COMPONENT (32px radius, Molded Look)
 // ==========================
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  glass?: boolean;
+  glass?: boolean; // Kept for interface compatibility
   hoverEffect?: boolean;
 }
 
@@ -21,12 +21,10 @@ export const Card: React.FC<CardProps> = ({
   return (
     <div
       className={`
-        rounded-2xl border p-6 transition-all duration-300
-        ${glass 
-          ? 'bg-slate-900/60 backdrop-blur-md border-slate-800/60 shadow-xl' 
-          : 'bg-slate-900 border-slate-800 shadow-lg'}
+        bg-slate-900 rounded-[32px] p-8 transition-all duration-300 ease-out
+        shadow-extruded border border-white/20
         ${hoverEffect 
-          ? 'hover:border-indigo-500/40 hover:shadow-indigo-500/5 hover:-translate-y-0.5' 
+          ? 'hover:shadow-extruded-hover hover:-translate-y-[1px]' 
           : ''}
         ${className}
       `}
@@ -38,7 +36,7 @@ export const Card: React.FC<CardProps> = ({
 };
 
 // ==========================
-// BUTTON COMPONENT
+// BUTTON COMPONENT (16px radius, Tactile Press)
 // ==========================
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost' | 'gradient';
@@ -53,21 +51,21 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]';
+  const baseStyles = 'inline-flex items-center justify-center font-bold rounded-2xl transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-[1px] active:translate-y-[0.5px] active:scale-[0.99]';
   
   const variants = {
-    primary: 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20',
-    secondary: 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/50',
-    outline: 'border border-slate-700 hover:border-slate-600 hover:bg-slate-800/50 text-slate-300',
-    danger: 'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/20',
-    ghost: 'hover:bg-slate-800/50 text-slate-400 hover:text-slate-200',
-    gradient: 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-xl shadow-indigo-500/10'
+    primary: 'bg-indigo-600 hover:bg-indigo-400 text-white shadow-[6px_6px_12px_rgba(108,99,255,0.25),-6px_-6px_12px_rgba(255,255,255,0.6)] active:shadow-[inset_4px_4px_8px_rgba(50,40,150,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.2)]',
+    secondary: 'bg-slate-900 hover:bg-slate-850 text-slate-100 shadow-extruded active:shadow-inset-sm',
+    outline: 'bg-slate-900 border border-slate-700/50 hover:bg-slate-850 text-slate-200 shadow-extruded active:shadow-inset-sm',
+    danger: 'bg-rose-500 hover:bg-rose-400 text-white shadow-[6px_6px_12px_rgba(239,68,68,0.25),-6px_-6px_12px_rgba(255,255,255,0.6)] active:shadow-[inset_4px_4px_8px_rgba(150,30,30,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.2)]',
+    ghost: 'text-slate-300 hover:text-slate-100 hover:shadow-extruded-sm active:shadow-inset-sm px-3.5',
+    gradient: 'bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white shadow-[6px_6px_12px_rgba(108,99,255,0.3),-6px_-6px_12px_rgba(255,255,255,0.6)] active:shadow-[inset_4px_4px_8px_rgba(50,40,150,0.35),inset_-4px_-4px_8px_rgba(255,255,255,0.2)]'
   };
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-xs',
-    md: 'px-4 py-2.5 text-sm',
-    lg: 'px-6 py-3.5 text-base'
+    sm: 'px-4 py-2 text-xs h-10',
+    md: 'px-5 py-3 text-sm h-12', // Minimum touch targets h-12 = 48px
+    lg: 'px-7 py-4 text-base h-14'
   };
 
   return (
@@ -82,7 +80,7 @@ export const Button: React.FC<ButtonProps> = ({
 };
 
 // ==========================
-// INPUT COMPONENT
+// INPUT COMPONENT (16px radius, Inset Well)
 // ==========================
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -94,24 +92,24 @@ export const Input: React.FC<InputProps> = React.forwardRef<HTMLInputElement, In
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-xs font-semibold text-slate-400 mb-1.5 tracking-wider uppercase">
+          <label className="block text-xs font-bold text-slate-300 mb-2 tracking-wider uppercase">
             {label}
           </label>
         )}
         <input
           ref={ref}
           className={`
-            w-full px-4 py-2.5 rounded-xl border bg-slate-950 text-slate-100 text-sm
-            transition-all duration-200 focus:outline-none focus:ring-2
-            disabled:opacity-50 disabled:bg-slate-900
-            ${error 
-              ? 'border-rose-500 focus:ring-rose-500/20' 
-              : 'border-slate-800 focus:border-indigo-500/80 focus:ring-indigo-500/20'}
+            w-full px-5 py-3 rounded-2xl bg-slate-900 text-slate-100 text-sm border-none
+            shadow-inset transition-all duration-300 ease-out
+            focus:outline-none focus:shadow-inset-deep focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 focus:ring-offset-slate-900
+            disabled:opacity-50 disabled:bg-slate-950
+            placeholder:text-slate-400
+            ${error ? 'ring-2 ring-rose-500' : ''}
             ${className}
           `}
           {...props}
         />
-        {error && <p className="text-xs text-rose-400 mt-1">{error}</p>}
+        {error && <p className="text-xs text-rose-500 font-semibold mt-1.5 ml-1">{error}</p>}
       </div>
     );
   }
@@ -119,7 +117,7 @@ export const Input: React.FC<InputProps> = React.forwardRef<HTMLInputElement, In
 Input.displayName = 'Input';
 
 // ==========================
-// SELECT COMPONENT
+// SELECT COMPONENT (16px radius, Inset Well)
 // ==========================
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
@@ -132,36 +130,35 @@ export const Select: React.FC<SelectProps> = React.forwardRef<HTMLSelectElement,
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-xs font-semibold text-slate-400 mb-1.5 tracking-wider uppercase">
+          <label className="block text-xs font-bold text-slate-300 mb-2 tracking-wider uppercase">
             {label}
           </label>
         )}
         <select
           ref={ref}
           className={`
-            w-full px-4 py-2.5 rounded-xl border bg-slate-950 text-slate-100 text-sm
-            transition-all duration-200 focus:outline-none focus:ring-2
-            disabled:opacity-50 disabled:bg-slate-900 appearance-none
-            ${error 
-              ? 'border-rose-500 focus:ring-rose-500/20' 
-              : 'border-slate-800 focus:border-indigo-500/80 focus:ring-indigo-500/20'}
+            w-full px-5 py-3 rounded-2xl bg-slate-900 text-slate-100 text-sm border-none
+            shadow-inset transition-all duration-300 ease-out
+            focus:outline-none focus:shadow-inset-deep focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 focus:ring-offset-slate-900
+            disabled:opacity-50 appearance-none
+            ${error ? 'ring-2 ring-rose-500' : ''}
             ${className}
           `}
           style={{
-            backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+            backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234a5568' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
             backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 1rem center',
+            backgroundPosition: 'right 1.25rem center',
             backgroundSize: '1.25em'
           }}
           {...props}
         >
           {options.map((opt) => (
-            <option key={opt.value} value={opt.value} className="bg-slate-950 text-slate-100">
+            <option key={opt.value} value={opt.value} className="bg-slate-900 text-slate-200">
               {opt.label}
             </option>
           ))}
         </select>
-        {error && <p className="text-xs text-rose-400 mt-1">{error}</p>}
+        {error && <p className="text-xs text-rose-500 font-semibold mt-1.5 ml-1">{error}</p>}
       </div>
     );
   }
@@ -169,7 +166,7 @@ export const Select: React.FC<SelectProps> = React.forwardRef<HTMLSelectElement,
 Select.displayName = 'Select';
 
 // ==========================
-// BADGE COMPONENT
+// BADGE COMPONENT (Soft Neumorphic contrast badges)
 // ==========================
 interface BadgeProps {
   content: string;
@@ -181,40 +178,34 @@ export const Badge: React.FC<BadgeProps> = ({ content, type = 'default' }) => {
     const val = content.toLowerCase();
 
     // Roles
-    if (val === 'admin') return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
-    if (val === 'asset manager') return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-    if (val === 'department head') return 'bg-sky-500/10 text-sky-400 border-sky-500/20';
-    if (val === 'employee') return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+    if (val === 'admin') return 'text-purple-600 bg-purple-500/10 shadow-[inset_1px_1px_3px_rgba(163,177,198,0.3)]';
+    if (val === 'asset manager') return 'text-indigo-600 bg-indigo-500/10 shadow-[inset_1px_1px_3px_rgba(163,177,198,0.3)]';
+    if (val === 'department head') return 'text-sky-600 bg-sky-500/10 shadow-[inset_1px_1px_3px_rgba(163,177,198,0.3)]';
+    if (val === 'employee') return 'text-slate-500 bg-slate-500/10 shadow-[inset_1px_1px_3px_rgba(163,177,198,0.2)]';
 
-    // Statuses
-    if (val === 'available' || val === 'active') return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-    if (val === 'allocated' || val === 'ongoing') return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-    if (val === 'reserved' || val === 'upcoming') return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-    if (val === 'under maintenance' || val === 'in progress') return 'bg-orange-500/10 text-orange-400 border-orange-500/20';
+    // Statuses & Actions
+    if (val === 'available' || val === 'active') return 'text-emerald-500 bg-emerald-500/15 shadow-[inset_1px_1px_3px_rgba(56,178,172,0.3)]';
+    if (val === 'allocated' || val === 'ongoing') return 'text-indigo-500 bg-indigo-500/15 shadow-[inset_1px_1px_3px_rgba(108,99,255,0.3)]';
+    if (val === 'reserved' || val === 'upcoming') return 'text-amber-500 bg-amber-500/15 shadow-[inset_1px_1px_3px_rgba(163,177,198,0.3)]';
+    if (val === 'under maintenance' || val === 'in progress') return 'text-orange-500 bg-orange-500/15 shadow-[inset_1px_1px_3px_rgba(163,177,198,0.3)]';
     if (val === 'lost' || val === 'broken' || val === 'rejected' || val === 'cancelled' || val === 'inactive' || val === 'critical') {
-      return 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+      return 'text-rose-500 bg-rose-500/15 shadow-[inset_1px_1px_3px_rgba(239,68,68,0.3)]';
     }
-    if (val === 'retired' || val === 'disposed') return 'bg-slate-600/10 text-slate-400 border-slate-600/20';
-    if (val === 'completed' || val === 'resolved' || val === 'approved') return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-    if (val === 'pending') return 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20';
+    if (val === 'completed' || val === 'resolved' || val === 'approved') return 'text-emerald-500 bg-emerald-500/15 shadow-[inset_1px_1px_3px_rgba(56,178,172,0.3)]';
+    if (val === 'pending') return 'text-indigo-600 bg-indigo-500/10 shadow-[inset_1px_1px_3px_rgba(108,99,255,0.2)]';
 
-    // Priorities
-    if (val === 'high') return 'bg-rose-500/10 text-rose-400 border-rose-500/25';
-    if (val === 'medium') return 'bg-amber-500/10 text-amber-400 border-amber-500/25';
-    if (val === 'low') return 'bg-slate-500/10 text-slate-400 border-slate-500/25';
-
-    return 'bg-slate-800 text-slate-400 border-slate-700/50';
+    return 'text-slate-400 bg-slate-400/10 shadow-[inset_1px_1px_3px_rgba(163,177,198,0.2)]';
   };
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStyles()}`}>
+    <span className={`inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-bold ${getStyles()}`}>
       {content}
     </span>
   );
 };
 
 // ==========================
-// MODAL COMPONENT
+// MODAL COMPONENT (Convex Lift, nested details)
 // ==========================
 interface ModalProps {
   isOpen: boolean;
@@ -242,26 +233,28 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      {/* Backdrop */}
+      {/* Backdrop with soft blur */}
       <div 
-        className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity duration-300" 
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300" 
         onClick={onClose}
       />
       
-      {/* Modal Container */}
-      <div className="relative w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl transition-all duration-300 scale-100 flex flex-col max-h-[90vh]">
+      {/* Neumorphic Modal Chassis */}
+      <div className="relative w-full max-w-lg rounded-[32px] bg-slate-900 p-8 shadow-extruded border border-white/20 transition-all duration-300 scale-100 flex flex-col max-h-[90vh] z-10 animate-fade-in">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
-          <h3 className="text-lg font-bold text-slate-100">{title}</h3>
+        <div className="flex items-center justify-between pb-5 mb-5 border-b border-slate-700/20">
+          <h3 className="text-base font-bold text-slate-100 font-display">{title}</h3>
+          
+          {/* Circular Close Button (tactile hover) */}
           <button 
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-200 p-1 hover:bg-slate-800 rounded-lg transition-all"
+            className="text-slate-400 hover:text-indigo-600 p-2.5 bg-slate-900 rounded-full shadow-extruded hover:shadow-extruded-sm active:shadow-inset-sm transition-all"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
         
-        {/* Content */}
+        {/* Scrollable Recessed Inner Content Container */}
         <div className="overflow-y-auto flex-1 pr-1">
           {children}
         </div>
@@ -310,33 +303,33 @@ export const ToastContainer: React.FC = () => {
   }, []);
 
   return (
-    <div className="fixed bottom-5 right-5 z-[9999] flex flex-col gap-3 max-w-sm w-full">
+    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-4.5 max-w-sm w-full">
       {activeToasts.map((toast) => {
         const icons = {
-          success: <CheckCircle className="text-emerald-400 flex-shrink-0" size={18} />,
-          error: <AlertCircle className="text-rose-400 flex-shrink-0" size={18} />,
-          info: <Info className="text-sky-400 flex-shrink-0" size={18} />,
-          warning: <AlertTriangle className="text-amber-400 flex-shrink-0" size={18} />
+          success: <CheckCircle className="text-emerald-500 flex-shrink-0" size={18} />,
+          error: <AlertCircle className="text-rose-500 flex-shrink-0" size={18} />,
+          info: <Info className="text-indigo-600 flex-shrink-0" size={18} />,
+          warning: <AlertTriangle className="text-amber-500 flex-shrink-0" size={18} />
         };
 
-        const bgStyles = {
-          success: 'bg-emerald-950/90 border-emerald-800/50 text-emerald-200',
-          error: 'bg-rose-950/90 border-rose-800/50 text-rose-200',
-          info: 'bg-sky-950/90 border-sky-800/50 text-sky-200',
-          warning: 'bg-amber-950/90 border-amber-800/50 text-amber-200'
+        const borders = {
+          success: 'border-l-4 border-emerald-500',
+          error: 'border-l-4 border-rose-500',
+          info: 'border-l-4 border-indigo-600',
+          warning: 'border-l-4 border-amber-500'
         };
 
         return (
           <div
             key={toast.id}
             className={`
-              flex items-start gap-3 p-4 rounded-xl border shadow-xl backdrop-blur-md
+              flex items-start gap-4 p-5 rounded-2xl bg-slate-900 shadow-extruded text-slate-100
               transform translate-y-0 transition-all duration-300 animate-slide-in
-              ${bgStyles[toast.type]}
+              ${borders[toast.type]}
             `}
           >
             {icons[toast.type]}
-            <p className="text-xs font-medium leading-5 flex-1">{toast.message}</p>
+            <p className="text-xs font-bold leading-5 flex-1">{toast.message}</p>
           </div>
         );
       })}
