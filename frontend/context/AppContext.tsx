@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { loginAPI, signupAPI, getProfileAPI } from '../../services/auth';
 import {
   User,
   Department,
@@ -170,9 +171,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setAudits(getLocal('af_audits', []));
       setAuditItems(getLocal('af_audit_items', []));
       
-      const loggedIn = localStorage.getItem('af_current_user');
-      if (loggedIn) {
-        setCurrentUser(JSON.parse(loggedIn));
+      const loggedInToken = localStorage.getItem('token');
+      if (loggedInToken) {
+        // Fetch profile
+        getProfileAPI().then(res => {
+          if (res.user) {
+            setCurrentUser(res.user);
+          }
+        }).catch(() => {
+          localStorage.removeItem('token');
+        });
       }
       setIsLoaded(true);
     };
@@ -187,37 +195,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Auth Operations
   const login = async (email: string, role?: UserRole) => {
-    const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (foundUser) {
-      // Allow overriding role for ease of hackathon demo testing
-      const userToSet = role ? { ...foundUser, role } : foundUser;
-      setCurrentUser(userToSet);
-      sync('af_current_user', userToSet);
-      return { success: true, message: 'Logged in successfully', user: userToSet };
+    try {
+      const res = await loginAPI(email, 'password123'); // Assuming default password for hackathon
+      if (res.token && res.user) {
+        localStorage.setItem('token', res.token);
+        setCurrentUser(res.user);
+        return { success: true, message: 'Logged in successfully', user: res.user };
+      }
+      return { success: false, message: res.message || 'Login failed' };
+    } catch (err: any) {
+      return { success: false, message: err.response?.data?.message || 'Login error' };
     }
-    return { success: false, message: 'User not found' };
   };
 
   const signup = async (name: string, email: string) => {
-    if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
-      return { success: false, message: 'Email already exists' };
+    try {
+      const res = await signupAPI(name, email, 'password123');
+      return { success: true, message: 'Account created successfully' };
+    } catch (err: any) {
+      return { success: false, message: err.response?.data?.message || 'Signup error' };
     }
-    const newUser: User = {
-      id: `u-${Date.now()}`,
-      name,
-      email,
-      role: 'Employee', // Default role
-      status: true
-    };
-    const updated = [...users, newUser];
-    setUsers(updated);
-    sync('af_users', updated);
-    return { success: true, message: 'Account created successfully! Contact Admin for role activation.' };
   };
 
   const logout = () => {
+    localStorage.removeItem('token');
     setCurrentUser(null);
-    localStorage.removeItem('af_current_user');
+    if (typeof window !== 'undefined') window.location.href = '/login';
   };
 
   // Notification Helper

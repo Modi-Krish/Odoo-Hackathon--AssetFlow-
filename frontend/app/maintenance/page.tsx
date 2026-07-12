@@ -1,336 +1,259 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useApp } from '@/context/AppContext';
-import { Card, Button, Input, Select, Badge, showToast } from '@/components/UI';
-import { Wrench, Plus, Check, X, ShieldAlert, User, Clock, CheckCircle } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
-import { MaintenancePriority, MaintenanceStatus } from '@/types';
+import { Maintenance } from '../../types/maintenance';
+import { Asset } from '../../types/allocation';
+import { createMaintenance, getMaintenance, approveMaintenance, rejectMaintenance } from '../../services/maintenance';
+import { MaintenanceTable } from '../../components/operations/MaintenanceTable';
+
+// Mock list of assets for maintenance reporter
+const MOCK_ASSETS: Asset[] = [
+  { id: '1', name: 'Laptop-01 (Dell XPS)', status: 'Available' },
+  { id: '2', name: 'Laptop-02 (MacBook Pro)', status: 'Allocated' },
+  { id: '3', name: 'Laptop-03 (ThinkPad T14)', status: 'Available' },
+  { id: '4', name: 'Monitor-01 (Dell 27")', status: 'Available' }
+];
 
 export default function MaintenancePage() {
-  const {
-    assets,
-    maintenance,
-    users,
-    currentUser,
-    raiseMaintenance,
-    updateMaintenanceStatus
-  } = useApp();
+  const [tickets, setTickets] = useState<Maintenance[]>([]);
+  const [assets] = useState<Asset[]>(MOCK_ASSETS);
 
-  const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'view' | 'raise'>('view');
+  // Form State
+  const [assetId, setAssetId] = useState<string>('');
+  const [issue, setIssue] = useState<string>('');
+  const [priority, setPriority] = useState<string>('Low');
 
-  // Request Form States
-  const [assetId, setAssetId] = useState('');
-  const [issue, setIssue] = useState('');
-  const [priority, setPriority] = useState<MaintenancePriority>('Medium');
+  // UI State
+  const [loading, setLoading] = useState<boolean>(false);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // Technician assignment local state
-  const [assigningId, setAssigningId] = useState<string | null>(null);
-  const [technicianName, setTechnicianName] = useState('');
-
-  // Auto-switch tabs if action=new query is passed
-  useEffect(() => {
-    if (searchParams && searchParams.get('action') === 'new') {
-      setActiveTab('raise');
+  // Fetch tickets
+  const fetchTickets = async () => {
+    try {
+      setLoading(true);
+      const data = await getMaintenance();
+      setTickets(data);
+    } catch (err) {
+      console.warn('API error fetching maintenance logs, using local state/mocks', err);
+    } finally {
+      setLoading(false);
     }
-  }, [searchParams]);
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchTickets();
+  }, []);
+
+  // Handle Form Submission
+  const handleSubmitTicket = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!assetId) return showToast('Please select an asset', 'error');
-    if (!issue.trim()) return showToast('Please describe the maintenance issue', 'error');
+    if (!assetId || !issue || !priority) {
+      setToast({ type: 'error', message: 'Please fill in all fields.' });
+      return;
+    }
 
-    const res = raiseMaintenance(assetId, issue, priority);
-    if (res.success) {
-      showToast(res.message, 'success');
+    try {
+      setLoading(true);
+      const payload = {
+        assetId,
+        issue,
+        priority
+      };
+
+      const newTicket = await createMaintenance(payload);
+      setTickets((prev: Maintenance[]) => [newTicket, ...prev]);
+      setToast({ type: 'success', message: 'Maintenance report submitted!' });
+
       // Reset
       setAssetId('');
       setIssue('');
-      setPriority('Medium');
-      setActiveTab('view');
-    } else {
-      showToast(res.message, 'error');
+      setPriority('Low');
+    } catch (err) {
+      console.warn('API error submitting ticket, using local fallback', err);
+      const fallbackTicket: Maintenance = {
+        id: Math.random().toString(36).substring(2, 9),
+        assetId,
+        issue,
+        priority,
+        status: 'Pending'
+      };
+      setTickets((prev: Maintenance[]) => [fallbackTicket, ...prev]);
+      setToast({ type: 'success', message: 'Report submitted (mock fallback).' });
+      
+      // Reset
+      setAssetId('');
+      setIssue('');
+      setPriority('Low');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleStatusUpdate = (requestId: string, status: MaintenanceStatus) => {
-    const res = updateMaintenanceStatus(requestId, status);
-    if (res.success) {
-      showToast(res.message, 'success');
-    } else {
-      showToast(res.message, 'error');
+  // Handle Approve Ticket
+  const handleApprove = async (id: string) => {
+    try {
+      setLoading(true);
+      const updated = await approveMaintenance(id);
+      setTickets((prev: Maintenance[]) =>
+        prev.map((t: Maintenance) => (t.id === id ? updated : t))
+      );
+      setToast({ type: 'success', message: 'Ticket approved successfully!' });
+    } catch (err) {
+      console.warn('API error on approval, using local fallback', err);
+      setTickets((prev: Maintenance[]) =>
+        prev.map((t: Maintenance) => (t.id === id ? { ...t, status: 'Approved' } : t))
+      );
+      setToast({ type: 'success', message: 'Approved successfully (mock fallback).' });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleAssignTechnicianSubmit = (e: React.FormEvent, requestId: string) => {
-    e.preventDefault();
-    if (!technicianName.trim()) return showToast('Technician name is required', 'error');
-    
-    const res = updateMaintenanceStatus(requestId, 'Technician Assigned', technicianName);
-    if (res.success) {
-      showToast('Technician assigned successfully', 'success');
-      setAssigningId(null);
-      setTechnicianName('');
+  // Handle Reject Ticket
+  const handleReject = async (id: string) => {
+    try {
+      setLoading(true);
+      const updated = await rejectMaintenance(id);
+      setTickets((prev: Maintenance[]) =>
+        prev.map((t: Maintenance) => (t.id === id ? updated : t))
+      );
+      setToast({ type: 'success', message: 'Ticket rejected.' });
+    } catch (err) {
+      console.warn('API error on reject, using local fallback', err);
+      setTickets((prev: Maintenance[]) =>
+        prev.map((t: Maintenance) => (t.id === id ? { ...t, status: 'Rejected' } : t))
+      );
+      setToast({ type: 'success', message: 'Rejected successfully (mock fallback).' });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const isManager = currentUser?.role === 'Admin' || currentUser?.role === 'Asset Manager';
-
-  // Assets options
-  const assetsOptions = [
-    { value: '', label: '-- Select Asset --' },
-    ...assets.map(a => ({ value: a.id, label: `${a.name} (${a.asset_tag})` }))
-  ];
+  // Toast auto-clear
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   return (
-    <div className="space-y-6">
-      {/* Title */}
-      <div>
-        <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-          <Wrench className="text-indigo-400" size={22} />
-          <span>Maintenance Workflows</span>
-        </h2>
-        <p className="text-xs text-slate-400 mt-0.5">Track and resolve hardware failures, schedule inspections, and manage technician assignments.</p>
-      </div>
+    <div className="min-h-screen bg-gray-50/50 py-10 dark:bg-gray-950">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        
+        {/* Header Section */}
+        <header className="mb-8">
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+            Asset Maintenance Module
+          </h1>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            Log maintenance issues, request repairs, and update hardware statuses.
+          </p>
+        </header>
 
-      {/* Tabs */}
-      <div className="flex border-b border-slate-800 pb-px gap-2">
-        <button
-          onClick={() => setActiveTab('view')}
-          className={`pb-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${activeTab === 'view' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
-        >
-          <Wrench size={14} /> Maintenance Pipelines
-        </button>
-        <button
-          onClick={() => setActiveTab('raise')}
-          className={`pb-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${activeTab === 'raise' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
-        >
-          <Plus size={14} /> Raise Request
-        </button>
-      </div>
+        {/* Notifications */}
+        {toast && (
+          <div
+            className={`mb-6 rounded-lg p-4 text-sm font-medium border transition-all duration-300 ${
+              toast.type === 'success'
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30'
+                : 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30'
+            }`}
+          >
+            {toast.message}
+          </div>
+        )}
 
-      {/* Tab content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          {activeTab === 'view' && (
-            <>
-              {maintenance.length === 0 ? (
-                <Card className="text-center py-8 font-semibold text-slate-500 text-xs italic">
-                  No maintenance records logged in the pipeline.
-                </Card>
-              ) : (
-                maintenance.map(req => {
-                  const ast = assets.find(a => a.id === req.asset_id);
-                  const creator = users.find(u => u.id === req.created_by);
+        <div className="grid gap-8 lg:grid-cols-3">
+          {/* Maintenance Form Panel */}
+          <div className="lg:col-span-1">
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6">
+                Report Issue
+              </h2>
 
-                  const showApproveReject = req.status === 'Pending' && isManager;
-                  const showAssignTech = req.status === 'Approved' && isManager;
-                  const showStartWork = req.status === 'Technician Assigned' && isManager;
-                  const showResolve = req.status === 'In Progress' && isManager;
+              <form onSubmit={handleSubmitTicket} className="space-y-5">
+                {/* Asset selector */}
+                <div>
+                  <label htmlFor="asset-select" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                    Asset
+                  </label>
+                  <select
+                    id="asset-select"
+                    value={assetId}
+                    onChange={(e) => setAssetId(e.target.value)}
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
+                    required
+                  >
+                    <option value="">Select Asset...</option>
+                    {assets.map((asset) => (
+                      <option key={asset.id} value={asset.id}>
+                        {asset.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-                  return (
-                    <Card key={req.id} className="space-y-4 border-slate-850">
-                      {/* Request Header */}
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-bold text-slate-200 text-sm">{ast?.name}</h3>
-                          <p className="text-[10px] text-slate-500 font-bold mt-1">TAG: <span className="text-indigo-400">{ast?.asset_tag}</span> | SERIAL: {ast?.serial_number}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Badge content={req.priority} />
-                          <Badge content={req.status} />
-                        </div>
-                      </div>
-
-                      {/* Issue Description */}
-                      <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-850 text-xs">
-                        <span className="font-bold text-slate-400 block mb-1">Reported Issue:</span>
-                        <span className="text-slate-200 leading-relaxed">{req.issue}</span>
-                      </div>
-
-                      {/* Details row */}
-                      <div className="flex flex-wrap gap-x-6 gap-y-2 text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
-                        <span className="flex items-center gap-1"><User size={12} className="text-indigo-400" /> Reported by {creator ? creator.name : 'Unknown'}</span>
-                        <span className="flex items-center gap-1"><Clock size={12} className="text-indigo-400" /> Opened {new Date(req.created_at).toLocaleString()}</span>
-                        {req.technician && <span className="text-slate-300 font-bold">Technician: {req.technician}</span>}
-                      </div>
-
-                      {/* Context-based Manager Actions */}
-                      {isManager && (showApproveReject || showAssignTech || showStartWork || showResolve || assigningId === req.id) && (
-                        <div className="border-t border-slate-800/80 pt-3 mt-2 flex flex-col gap-3">
-                          
-                          {/* Approve/Reject Buttons */}
-                          {showApproveReject && (
-                            <div className="flex items-center gap-2">
-                              <Button 
-                                onClick={() => handleStatusUpdate(req.id, 'Approved')} 
-                                variant="primary" 
-                                size="sm"
-                                className="flex items-center gap-1 text-[11px]"
-                              >
-                                <Check size={12} /> Approve Repair
-                              </Button>
-                              <Button 
-                                onClick={() => handleStatusUpdate(req.id, 'Resolved')} // Simulate rejecting by forcing status update to resolved/closed
-                                variant="ghost" 
-                                size="sm"
-                                className="flex items-center gap-1 text-[11px] text-rose-400 hover:bg-rose-500/10"
-                              >
-                                <X size={12} /> Reject Request
-                              </Button>
-                            </div>
-                          )}
-
-                          {/* Assign Technician Button / Form trigger */}
-                          {showAssignTech && assigningId !== req.id && (
-                            <Button 
-                              onClick={() => setAssigningId(req.id)} 
-                              variant="outline" 
-                              size="sm"
-                              className="text-[11px]"
-                            >
-                              Assign Technician
-                            </Button>
-                          )}
-
-                          {/* Inline assign technician form */}
-                          {assigningId === req.id && (
-                            <form onSubmit={(e) => handleAssignTechnicianSubmit(e, req.id)} className="flex items-end gap-2 max-w-sm">
-                              <Input
-                                label="Technician / Service Center Name"
-                                placeholder="e.g. Electra Lab Services"
-                                value={technicianName}
-                                onChange={e => setTechnicianName(e.target.value)}
-                                required
-                              />
-                              <Button type="submit" variant="gradient" size="sm" className="mb-px h-[38px] text-[11px]">
-                                Assign
-                              </Button>
-                              <Button type="button" variant="outline" size="sm" onClick={() => setAssigningId(null)} className="mb-px h-[38px] text-[11px]">
-                                Cancel
-                              </Button>
-                            </form>
-                          )}
-
-                          {/* Start Work button */}
-                          {showStartWork && (
-                            <Button 
-                              onClick={() => handleStatusUpdate(req.id, 'In Progress')} 
-                              variant="gradient" 
-                              size="sm"
-                              className="text-[11px]"
-                            >
-                              Mark In Progress (Start Repair)
-                            </Button>
-                          )}
-
-                          {/* Resolve Repair button */}
-                          {showResolve && (
-                            <Button 
-                              onClick={() => handleStatusUpdate(req.id, 'Resolved')} 
-                              variant="primary" 
-                              size="sm"
-                              className="flex items-center gap-1 text-[11px] bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/10"
-                            >
-                              <CheckCircle size={12} /> Mark Fixed (Resolve)
-                            </Button>
-                          )}
-
-                        </div>
-                      )}
-                    </Card>
-                  );
-                })
-              )}
-            </>
-          )}
-
-          {activeTab === 'raise' && (
-            <Card>
-              <h3 className="text-sm font-bold text-slate-200 mb-4">Submit Maintenance Ticket</h3>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <Select
-                  label="Select Faulty Asset"
-                  options={assetsOptions}
-                  value={assetId}
-                  onChange={e => setAssetId(e.target.value)}
-                  required
-                />
-
-                <Select
-                  label="Priority Level"
-                  options={[
-                    { value: 'Low', label: 'Low' },
-                    { value: 'Medium', label: 'Medium' },
-                    { value: 'High', label: 'High' },
-                    { value: 'Critical', label: 'Critical' }
-                  ]}
-                  value={priority}
-                  onChange={e => setPriority(e.target.value as MaintenancePriority)}
-                  required
-                />
-
-                <div className="w-full">
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 tracking-wider uppercase">
-                    Description of Issue
+                {/* Issue text field */}
+                <div>
+                  <label htmlFor="issue-desc" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                    Issue Description
                   </label>
                   <textarea
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-100 text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 h-28 resize-none"
-                    placeholder="Provide details about the malfunction or problem..."
+                    id="issue-desc"
                     value={issue}
-                    onChange={e => setIssue(e.target.value)}
+                    onChange={(e) => setIssue(e.target.value)}
+                    placeholder="Describe the issue in detail"
+                    rows={4}
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
                     required
                   />
                 </div>
 
-                <Button type="submit" variant="gradient" className="w-full mt-2" disabled={!assetId || !issue}>
-                  Submit Request
-                </Button>
+                {/* Priority Selector */}
+                <div>
+                  <label htmlFor="priority-select" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                    Priority
+                  </label>
+                  <select
+                    id="priority-select"
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value)}
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
+                    required
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                  </select>
+                </div>
+
+                {/* Submit button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+                >
+                  Submit Report
+                </button>
               </form>
-            </Card>
-          )}
-        </div>
-
-        {/* Informational Panel */}
-        <Card className="lg:col-span-1 space-y-4 h-fit bg-slate-950/40 border-slate-800 text-xs">
-          <h3 className="text-sm font-bold text-slate-300">Approval Workflow</h3>
-          
-          <div className="space-y-4 leading-relaxed text-slate-400">
-            <div className="flex gap-2">
-              <div className="w-5 h-5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-[10px] shrink-0">1</div>
-              <div>
-                <span className="font-bold text-slate-200 block">Pending</span>
-                <span>Employee raises request. Stays in Pending queue. Asset status is still Allocated.</span>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <div className="w-5 h-5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-[10px] shrink-0">2</div>
-              <div>
-                <span className="font-bold text-slate-200 block">Approved & Assigned</span>
-                <span>Asset Manager approves. Asset transitions status automatically to <strong>Under Maintenance</strong>. Technician is assigned.</span>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <div className="w-5 h-5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-[10px] shrink-0">3</div>
-              <div>
-                <span className="font-bold text-slate-200 block">In Progress</span>
-                <span>Repair starts. Status shifts to In Progress. Asset is blocked from bookings or checkouts.</span>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <div className="w-5 h-5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-[10px] shrink-0">4</div>
-              <div>
-                <span className="font-bold text-slate-200 block">Resolved</span>
-                <span>Technician finishes work. Manager marks resolved. Asset automatically shifts back to <strong>Available</strong> (or Active Allocation).</span>
-              </div>
             </div>
           </div>
-        </Card>
 
+          {/* Maintenance Table Panel */}
+          <div className="lg:col-span-2 space-y-4">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+              Maintenance Log
+            </h2>
+            <MaintenanceTable
+              tickets={tickets}
+              assets={assets}
+              onApprove={handleApprove}
+              onReject={handleReject}
+              loading={loading}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

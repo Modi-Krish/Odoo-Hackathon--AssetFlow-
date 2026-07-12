@@ -17,30 +17,30 @@ INSERT INTO departments (id, name, status) VALUES
 -- ============================================================
 
 INSERT INTO users (id, name, email, password, role, department_id, status) VALUES
-  ('u0000001-0000-0000-0000-000000000001', 'Krish Modi', 'admin@assetflow.com',
+  ('e0000001-0000-0000-0000-000000000001', 'Krish Modi', 'admin@assetflow.com',
    '$2b$10$8K1p/a0dL1LXMIgoEDFrwOfMQCasNU1u0MR6gzRVQ5Ey7KTpOCm7y',
    'admin', 'd0000001-0000-0000-0000-000000000001', true),
 
-  ('u0000001-0000-0000-0000-000000000002', 'Asset Manager', 'manager@assetflow.com',
+  ('e0000001-0000-0000-0000-000000000002', 'Asset Manager', 'manager@assetflow.com',
    '$2b$10$8K1p/a0dL1LXMIgoEDFrwOfMQCasNU1u0MR6gzRVQ5Ey7KTpOCm7y',
    'asset_manager', 'd0000001-0000-0000-0000-000000000001', true),
 
-  ('u0000001-0000-0000-0000-000000000003', 'Department Head', 'head@assetflow.com',
+  ('e0000001-0000-0000-0000-000000000003', 'Department Head', 'head@assetflow.com',
    '$2b$10$8K1p/a0dL1LXMIgoEDFrwOfMQCasNU1u0MR6gzRVQ5Ey7KTpOCm7y',
    'department_head', 'd0000001-0000-0000-0000-000000000002', true),
 
-  ('u0000001-0000-0000-0000-000000000004', 'John Employee', 'john@assetflow.com',
+  ('e0000001-0000-0000-0000-000000000004', 'John Employee', 'john@assetflow.com',
    '$2b$10$8K1p/a0dL1LXMIgoEDFrwOfMQCasNU1u0MR6gzRVQ5Ey7KTpOCm7y',
    'employee', 'd0000001-0000-0000-0000-000000000002', true),
 
-  ('u0000001-0000-0000-0000-000000000005', 'Jane Employee', 'jane@assetflow.com',
+  ('e0000001-0000-0000-0000-000000000005', 'Jane Employee', 'jane@assetflow.com',
    '$2b$10$8K1p/a0dL1LXMIgoEDFrwOfMQCasNU1u0MR6gzRVQ5Ey7KTpOCm7y',
    'employee', 'd0000001-0000-0000-0000-000000000003', true);
 
 -- Assign department heads
-UPDATE departments SET head_id = 'u0000001-0000-0000-0000-000000000001'
+UPDATE departments SET head_id = 'e0000001-0000-0000-0000-000000000001'
   WHERE id = 'd0000001-0000-0000-0000-000000000001';
-UPDATE departments SET head_id = 'u0000001-0000-0000-0000-000000000003'
+UPDATE departments SET head_id = 'e0000001-0000-0000-0000-000000000003'
   WHERE id = 'd0000001-0000-0000-0000-000000000002';
 
 -- ============================================================
@@ -96,14 +96,14 @@ INSERT INTO assets (id, asset_tag, name, category_id, serial_number, condition, 
 -- ============================================================
 
 INSERT INTO asset_allocations (asset_id, employee_id, allocated_by, allocation_date, expected_return) VALUES
-  ('a0000001-0000-0000-0000-000000000007', 'u0000001-0000-0000-0000-000000000004',
-   'u0000001-0000-0000-0000-000000000002', '2024-04-15', '2025-04-15');
+  ('a0000001-0000-0000-0000-000000000007', 'e0000001-0000-0000-0000-000000000004',
+   'e0000001-0000-0000-0000-000000000002', '2024-04-15', '2025-04-15');
 
 -- ============================================================
 -- SAMPLE NOTIFICATIONS
 -- ============================================================
 
 INSERT INTO notifications (title, description, user_id) VALUES
-  ('Welcome to AssetFlow', 'Your account has been created successfully.', 'u0000001-0000-0000-0000-000000000001'),
-  ('Asset Allocated', 'Ergonomic Chair has been assigned to John Employee.', 'u0000001-0000-0000-0000-000000000004'),
-  ('System Ready', 'AssetFlow is configured and ready to use.', 'u0000001-0000-0000-0000-000000000001');
+  ('Welcome to AssetFlow', 'Your account has been created successfully.', 'e0000001-0000-0000-0000-000000000001'),
+  ('Asset Allocated', 'Ergonomic Chair has been assigned to John Employee.', 'e0000001-0000-0000-0000-000000000004'),
+  ('System Ready', 'AssetFlow is configured and ready to use.', 'e0000001-0000-0000-0000-000000000001');

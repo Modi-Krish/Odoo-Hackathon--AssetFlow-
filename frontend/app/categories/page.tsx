@@ -1,18 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Card, Button, Input, Badge, Modal, showToast } from '@/components/UI';
 import { Tags, Plus, Edit2, Trash2, ShieldAlert } from 'lucide-react';
+import { getCategories, createCategory, updateCategory, deleteCategory as deleteCatAPI } from '../../services/categories';
+import { AssetCategory } from '@/types';
 
 export default function CategoriesPage() {
-  const { 
-    currentUser, 
-    categories, 
-    addCategory, 
-    updateCategory, 
-    deleteCategory 
-  } = useApp();
+  const { currentUser } = useApp();
+  const [categories, setCategories] = useState<AssetCategory[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -21,8 +19,26 @@ export default function CategoriesPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
-  // Role Gate check: Admin / Asset Manager only (PRD screen 2)
-  const isAuthorized = currentUser?.role === 'Admin' || currentUser?.role === 'Asset Manager';
+  // Role Gate check: Admin / Asset Manager only
+  const isAuthorized = currentUser?.role === 'admin' || currentUser?.role === 'asset_manager' || currentUser?.role === 'Admin' || currentUser?.role === 'Asset Manager';
+
+  useEffect(() => {
+    if (isAuthorized) {
+      loadCategories();
+    }
+  }, [isAuthorized]);
+
+  const loadCategories = async () => {
+    try {
+      setLoading(true);
+      const data = await getCategories();
+      setCategories(data);
+    } catch (err) {
+      showToast('Failed to load categories', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!isAuthorized) {
     return (
@@ -54,27 +70,37 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       showToast('Category Name is required', 'error');
       return;
     }
 
-    if (editingId) {
-      updateCategory(editingId, { name, description });
-      showToast('Category updated successfully', 'success');
-    } else {
-      addCategory({ name, description });
-      showToast('Category created successfully', 'success');
+    try {
+      if (editingId) {
+        await updateCategory(editingId, { name, description });
+        showToast('Category updated successfully', 'success');
+      } else {
+        await createCategory({ name, description });
+        showToast('Category created successfully', 'success');
+      }
+      setIsOpen(false);
+      loadCategories(); // Refresh list
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Action failed', 'error');
     }
-    setIsOpen(false);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this category?')) {
-      deleteCategory(id);
-      showToast('Category deleted successfully', 'success');
+      try {
+        await deleteCatAPI(id);
+        showToast('Category deleted successfully', 'success');
+        loadCategories(); // Refresh list
+      } catch (err: any) {
+        showToast(err.response?.data?.message || 'Delete failed', 'error');
+      }
     }
   };
 
@@ -94,6 +120,9 @@ export default function CategoriesPage() {
       </div>
 
       {/* Categories Grid List */}
+      {loading ? (
+        <div className="text-slate-400 p-8 text-center">Loading categories...</div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {categories.map(cat => (
           <Card key={cat.id} className="flex flex-col justify-between h-40">
@@ -130,6 +159,7 @@ export default function CategoriesPage() {
           </Card>
         ))}
       </div>
+      )}
 
       {/* Add/Edit Category Modal */}
       <Modal 

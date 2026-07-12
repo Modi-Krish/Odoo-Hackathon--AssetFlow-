@@ -6,17 +6,15 @@ import { Card, Button, Input, Select, Badge, Modal, showToast } from '@/componen
 import { Package, Search, Filter, ArrowUpDown, Plus, Eye, Wrench, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { AssetCondition } from '@/types';
+import { AssetCondition, Asset, AssetCategory } from '@/types';
+import { getAssets, createAsset } from '../../services/assets';
+import { getCategories } from '../../services/categories';
 
 export default function AssetsPage() {
-  const { 
-    currentUser, 
-    assets, 
-    categories, 
-    addAsset, 
-    deleteAsset,
-    users 
-  } = useApp();
+  const { currentUser } = useApp();
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [categories, setCategories] = useState<AssetCategory[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const searchParams = useSearchParams();
   const [isOpen, setIsOpen] = useState(false);
@@ -46,7 +44,27 @@ export default function AssetsPage() {
   }, [searchParams]);
 
   // Permission Gate: Asset Managers and Admins can register assets
-  const canRegister = currentUser?.role === 'Admin' || currentUser?.role === 'Asset Manager';
+  const canRegister = currentUser?.role === 'admin' || currentUser?.role === 'asset_manager' || currentUser?.role === 'Admin' || currentUser?.role === 'Asset Manager';
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [assetsData, catsData] = await Promise.all([
+        getAssets(),
+        getCategories()
+      ]);
+      setAssets(assetsData);
+      setCategories(catsData);
+    } catch (err) {
+      showToast('Failed to load asset data', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenNew = () => {
     if (!canRegister) {
@@ -64,30 +82,30 @@ export default function AssetsPage() {
     setIsOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return showToast('Asset Name is required', 'error');
     if (!categoryId) return showToast('Category is required', 'error');
     if (!serialNumber.trim()) return showToast('Serial Number is required', 'error');
 
-    // Serial unique check
-    if (assets.some(a => a.serial_number.toLowerCase() === serialNumber.toLowerCase())) {
-      return showToast('Serial Number must be unique', 'error');
+    try {
+      await createAsset({
+        name,
+        category_id: categoryId,
+        serial_number: serialNumber,
+        purchase_date: purchaseDate,
+        purchase_cost: Number(purchaseCost) || 0,
+        condition,
+        location,
+        bookable
+      });
+
+      showToast('Asset registered successfully', 'success');
+      setIsOpen(false);
+      loadData(); // Refresh table
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to register asset', 'error');
     }
-
-    addAsset({
-      name,
-      category_id: categoryId,
-      serial_number: serialNumber,
-      purchase_date: purchaseDate,
-      purchase_cost: Number(purchaseCost) || 0,
-      condition,
-      location,
-      bookable
-    });
-
-    showToast('Asset registered successfully', 'success');
-    setIsOpen(false);
   };
 
   // Filter & Sort Logic
@@ -209,7 +227,13 @@ export default function AssetsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/40 text-slate-300 font-medium">
-              {filteredAssets.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-slate-500 text-sm font-semibold">
+                    Loading assets...
+                  </td>
+                </tr>
+              ) : filteredAssets.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-8 text-center text-slate-500 text-sm font-semibold">
                     No assets matched search queries.
