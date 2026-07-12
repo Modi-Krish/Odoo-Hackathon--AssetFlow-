@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Card, Button, Input, Select, Badge, showToast, Loader, ErrorMessage, Skeleton, EmptyState } from '@/components/UI';
 import { Allocation, Asset, Employee, Transfer } from '../../types/allocation';
 import {
   getAllocationHistory,
@@ -9,6 +10,7 @@ import {
   rejectTransfer,
   getPendingTransfers
 } from '../../services/allocation';
+import { ArrowLeftRight, Inbox } from 'lucide-react';
 
 // Mock data as fallback
 const MOCK_ASSETS: Asset[] = [
@@ -24,20 +26,19 @@ const MOCK_EMPLOYEES: Employee[] = [
   { id: 'emp-03', name: 'Bob Johnson', email: 'bob.johnson@company.com' }
 ];
 
-// Initial mock allocations to show "From Employee" auto-filled behavior
 const MOCK_ALLOCATIONS: Allocation[] = [
   {
     id: 'alloc-01',
-    assetId: '1', // Laptop-01
-    employeeId: 'emp-01', // John Doe
+    assetId: '1',
+    employeeId: 'emp-01',
     allocationDate: '2026-07-01',
     expectedReturn: '2026-08-01',
     status: 'Allocated'
   },
   {
     id: 'alloc-02',
-    assetId: '2', // Laptop-02
-    employeeId: 'emp-02', // Jane Smith
+    assetId: '2',
+    employeeId: 'emp-02',
     allocationDate: '2026-07-05',
     expectedReturn: '2026-07-25',
     status: 'Allocated'
@@ -57,8 +58,8 @@ export default function TransferPage() {
   const [fromEmployeeName, setFromEmployeeName] = useState<string>('Auto-detected');
 
   // UI State
-  const [loading, setLoading] = useState<boolean>(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Auto-detect currently allocated employee when asset is selected
   useEffect(() => {
@@ -68,7 +69,6 @@ export default function TransferPage() {
       return;
     }
 
-    // Find active allocation for this asset
     const activeAlloc = allocations.find(
       (a: Allocation) => a.assetId === selectedAssetId && a.status.toLowerCase() === 'allocated'
     );
@@ -89,22 +89,26 @@ export default function TransferPage() {
   }, [selectedAssetId, allocations, employees]);
 
   // Load initial data
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [pendingTransfers, history] = await Promise.all([
+        getPendingTransfers(),
+        getAllocationHistory()
+      ]);
+      setTransfers(pendingTransfers);
+      setAllocations(history);
+    } catch (err) {
+      console.warn('API error loading transfers or history. Using local mock fallbacks.', err);
+      // Fallback
+      setTransfers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const [pendingTransfers, history] = await Promise.all([
-          getPendingTransfers(),
-          getAllocationHistory()
-        ]);
-        setTransfers(pendingTransfers);
-        setAllocations(history);
-      } catch (err) {
-        console.warn('API error loading transfers or history. Using local mock fallbacks.', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadData();
   }, []);
 
@@ -112,12 +116,12 @@ export default function TransferPage() {
   const handleTransferRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedAssetId || !fromEmployeeId || !toEmployeeId) {
-      setMessage({ type: 'error', text: 'Please select an asset and destination employee.' });
+      showToast('Please select an asset and destination employee.', 'error');
       return;
     }
 
     if (fromEmployeeId === toEmployeeId) {
-      setMessage({ type: 'error', text: 'Cannot transfer asset to the same employee.' });
+      showToast('Cannot transfer asset to the same employee.', 'error');
       return;
     }
 
@@ -131,7 +135,7 @@ export default function TransferPage() {
 
       const newTransfer = await requestTransfer(payload);
       setTransfers((prev: Transfer[]) => [newTransfer, ...prev]);
-      setMessage({ type: 'success', text: 'Transfer request submitted successfully!' });
+      showToast('Transfer request submitted successfully!', 'success');
       setSelectedAssetId('');
       setToEmployeeId('');
     } catch (err) {
@@ -144,7 +148,7 @@ export default function TransferPage() {
         status: 'Pending'
       };
       setTransfers((prev: Transfer[]) => [fallbackTransfer, ...prev]);
-      setMessage({ type: 'success', text: 'Transfer requested (mock fallback).' });
+      showToast('Transfer requested (mock fallback).', 'success');
       setSelectedAssetId('');
       setToEmployeeId('');
     } finally {
@@ -161,7 +165,6 @@ export default function TransferPage() {
         prev.map((t: Transfer) => (t.id === id ? updated : t))
       );
 
-      // Perform allocation state update locally
       const approvedTransfer = transfers.find((t: Transfer) => t.id === id);
       if (approvedTransfer) {
         setAllocations((prev: Allocation[]) =>
@@ -173,10 +176,9 @@ export default function TransferPage() {
         );
       }
 
-      setMessage({ type: 'success', text: 'Transfer request approved!' });
+      showToast('Transfer request approved!', 'success');
     } catch (err) {
       console.warn('API error on approval, using local fallback', err);
-      // Fallback
       setTransfers((prev: Transfer[]) =>
         prev.map((t: Transfer) => (t.id === id ? { ...t, status: 'Approved' } : t))
       );
@@ -191,7 +193,7 @@ export default function TransferPage() {
           )
         );
       }
-      setMessage({ type: 'success', text: 'Approved successfully (mock fallback).' });
+      showToast('Approved successfully (mock fallback).', 'success');
     } finally {
       setLoading(false);
     }
@@ -205,19 +207,18 @@ export default function TransferPage() {
       setTransfers((prev: Transfer[]) =>
         prev.map((t: Transfer) => (t.id === id ? updated : t))
       );
-      setMessage({ type: 'success', text: 'Transfer request rejected.' });
+      showToast('Transfer request rejected.', 'success');
     } catch (err) {
       console.warn('API error on reject, using local fallback', err);
       setTransfers((prev: Transfer[]) =>
         prev.map((t: Transfer) => (t.id === id ? { ...t, status: 'Rejected' } : t))
       );
-      setMessage({ type: 'success', text: 'Rejected successfully (mock fallback).' });
+      showToast('Rejected successfully (mock fallback).', 'success');
     } finally {
       setLoading(false);
     }
   };
 
-  // Helpers to resolve names
   const getAssetName = (assetId: string) => {
     const asset = assets.find((a: Asset) => a.id === assetId);
     return asset ? asset.name : assetId;
@@ -228,204 +229,166 @@ export default function TransferPage() {
     return employee ? employee.name : employeeId;
   };
 
-  const getStatusBadgeClass = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
-      case 'approved':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-      case 'rejected':
-        return 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
-    }
-  };
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2 font-display">
+            <ArrowLeftRight className="text-indigo-600 animate-float" size={22} />
+            <span>Asset Transfer Requests</span>
+          </h2>
+          <p className="text-xs text-slate-300 mt-0.5 font-bold uppercase tracking-wider font-sans">Initiate, approve, or reject asset transfers between employees.</p>
+        </div>
+        <div className="grid gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-1">
+            <Skeleton className="h-64 w-full" />
+          </div>
+          <div className="lg:col-span-2">
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </div>
+        <Loader message="Syncing device transfer protocols..." />
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(null), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <ErrorMessage message={error} onRetry={loadData} />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 py-10 dark:bg-gray-950">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        
-        {/* Header Section */}
-        <header className="mb-8">
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-            Asset Transfer Requests
-          </h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Initiate, approve, or reject asset transfers between employees.
-          </p>
-        </header>
+    <div className="space-y-6">
+      
+      {/* Header Section */}
+      <div>
+        <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2 font-display">
+          <ArrowLeftRight className="text-indigo-600 animate-float" size={22} />
+          <span>Asset Transfer Requests</span>
+        </h2>
+        <p className="text-xs text-slate-300 mt-0.5 font-bold uppercase tracking-wider font-sans">
+          Initiate, approve, or reject asset transfers between employees.
+        </p>
+      </div>
 
-        {/* Status Messages */}
-        {message && (
-          <div
-            className={`mb-6 rounded-lg p-4 text-sm font-medium border transition-all duration-300 ${
-              message.type === 'success'
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30'
-                : 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30'
-            }`}
-          >
-            {message.text}
-          </div>
-        )}
+      <div className="grid gap-8 lg:grid-cols-3">
+        {/* Transfer Form Panel */}
+        <div className="lg:col-span-1">
+          <Card>
+            <h3 className="text-sm font-bold text-slate-100 mb-4 font-display">
+              Transfer Asset
+            </h3>
 
-        <div className="grid gap-8 lg:grid-cols-3">
-          {/* Transfer Form Panel */}
-          <div className="lg:col-span-1">
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6">
-                Transfer Asset
-              </h2>
+            <form onSubmit={handleTransferRequest} className="space-y-4">
+              <Select
+                label="Asset to transfer"
+                options={[
+                  { value: '', label: 'Select Asset...' },
+                  ...assets.map(a => ({ value: a.id, label: `${a.name} (${a.status})` }))
+                ]}
+                value={selectedAssetId}
+                onChange={e => setSelectedAssetId(e.target.value)}
+                required
+              />
 
-              <form onSubmit={handleTransferRequest} className="space-y-5">
-                {/* Asset Select */}
-                <div>
-                  <label htmlFor="asset-select" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
-                    Asset
-                  </label>
-                  <select
-                    id="asset-select"
-                    value={selectedAssetId}
-                    onChange={(e) => setSelectedAssetId(e.target.value)}
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
-                    required
-                  >
-                    <option value="">Select Asset...</option>
-                    {assets.map((asset) => (
-                      <option key={asset.id} value={asset.id}>
-                        {asset.name} ({asset.status})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <Input
+                label="From Employee (Auto-filled)"
+                type="text"
+                value={fromEmployeeName}
+                disabled
+              />
 
-                {/* From Employee (Auto-filled) */}
-                <div>
-                  <label htmlFor="from-employee" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
-                    From Employee
-                  </label>
-                  <input
-                    id="from-employee"
-                    type="text"
-                    value={fromEmployeeName}
-                    readOnly
-                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-500 focus:outline-none dark:border-gray-800 dark:bg-gray-800 dark:text-gray-400 cursor-not-allowed"
-                  />
-                </div>
+              <Select
+                label="Transfer to Employee"
+                options={[
+                  { value: '', label: 'Select Target Employee...' },
+                  ...employees.filter(emp => emp.id !== fromEmployeeId).map(emp => ({ value: emp.id, label: emp.name }))
+                ]}
+                value={toEmployeeId}
+                onChange={e => setToEmployeeId(e.target.value)}
+                required
+                disabled={!fromEmployeeId}
+              />
 
-                {/* To Employee Select */}
-                <div>
-                  <label htmlFor="to-employee" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
-                    To Employee
-                  </label>
-                  <select
-                    id="to-employee"
-                    value={toEmployeeId}
-                    onChange={(e) => setToEmployeeId(e.target.value)}
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
-                    required
-                  >
-                    <option value="">Select Target Employee...</option>
-                    {employees
-                      .filter((emp: Employee) => emp.id !== fromEmployeeId)
-                      .map((emp: Employee) => (
-                        <option key={emp.id} value={emp.id}>
-                          {emp.name}
-                        </option>
-                      ))}
-                  </select>
-                </div>
+              <Button
+                type="submit"
+                variant="gradient"
+                className="w-full mt-2 font-display uppercase tracking-wider text-xs"
+                disabled={!fromEmployeeId || !toEmployeeId}
+              >
+                Transfer
+              </Button>
+            </form>
+          </Card>
+        </div>
 
-                {/* Submit button */}
-                <button
-                  type="submit"
-                  disabled={loading || !fromEmployeeId}
-                  className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Transfer
-                </button>
-              </form>
+        {/* Pending Transfers Table Panel */}
+        <div className="lg:col-span-2">
+          <Card className="p-0 overflow-hidden">
+            <div className="p-5 border-b border-slate-700/25">
+              <h3 className="text-sm font-bold text-slate-100 font-display">
+                Pending Transfers
+              </h3>
             </div>
-          </div>
-
-          {/* Pending Transfers Table Panel */}
-          <div className="lg:col-span-2 space-y-4">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-              Pending Transfers
-            </h2>
-
-            <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
-                <thead className="bg-gray-50 dark:bg-gray-800/50">
-                  <tr>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      Asset
-                    </th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      From
-                    </th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      To
-                    </th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      Status
-                    </th>
-                    <th scope="col" className="relative px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      Actions
-                    </th>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-700/20 bg-slate-850/40 text-slate-300 font-extrabold uppercase tracking-wider">
+                    <th className="py-4 px-6 font-display">Asset</th>
+                    <th className="py-4 px-6 font-display">From</th>
+                    <th className="py-4 px-6 font-display">To</th>
+                    <th className="py-4 px-6 text-center font-display">Status</th>
+                    <th className="py-4 px-6 text-right font-display">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-800 dark:bg-gray-900">
+                <tbody className="divide-y divide-slate-700/10 text-slate-100 font-bold">
                   {transfers.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                        No transfer requests found.
+                      <td colSpan={5} className="py-8">
+                        <EmptyState
+                          title="No Pending Transfers"
+                          description="No device transfers are currently requiring authorization."
+                          icon={<Inbox size={36} className="text-slate-600" />}
+                        />
                       </td>
                     </tr>
                   ) : (
                     transfers.map((transfer: Transfer) => (
-                      <tr key={transfer.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                        <td className="whitespace-nowrap px-6 py-4">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {getAssetName(transfer.assetId)}
-                          </div>
+                      <tr key={transfer.id} className="hover:bg-slate-850/20 transition-all">
+                        <td className="py-4 px-6 font-extrabold text-slate-200">
+                          {getAssetName(transfer.assetId)}
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4">
-                          <div className="text-sm text-gray-700 dark:text-gray-300">
-                            {getEmployeeName(transfer.fromEmployee)}
-                          </div>
+                        <td className="py-4 px-6 text-slate-300">
+                          {getEmployeeName(transfer.fromEmployee)}
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4">
-                          <div className="text-sm text-gray-700 dark:text-gray-300">
-                            {getEmployeeName(transfer.toEmployee)}
-                          </div>
+                        <td className="py-4 px-6 text-slate-300">
+                          {getEmployeeName(transfer.toEmployee)}
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4">
-                          <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeClass(transfer.status)}`}>
-                            {transfer.status}
-                          </span>
+                        <td className="py-4 px-6 text-center">
+                          <Badge content={transfer.status} />
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                        <td className="py-4 px-6 text-right">
                           {transfer.status.toLowerCase() === 'pending' && (
-                            <div className="flex justify-end gap-3">
-                              <button
+                            <div className="flex justify-end gap-2.5">
+                              <Button
                                 onClick={() => handleApprove(transfer.id)}
-                                className="inline-flex items-center rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-100 transition-colors dark:bg-emerald-950/40 dark:text-emerald-400 dark:hover:bg-emerald-900/60"
+                                variant="primary"
+                                size="sm"
                               >
                                 Approve
-                              </button>
-                              <button
+                              </Button>
+                              <Button
                                 onClick={() => handleReject(transfer.id)}
-                                className="inline-flex items-center rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 transition-colors dark:bg-rose-950/40 dark:text-rose-400 dark:hover:bg-rose-900/60"
+                                variant="ghost"
+                                className="text-rose-600 font-bold hover:bg-rose-500/10"
+                                size="sm"
                               >
                                 Reject
-                              </button>
+                              </Button>
                             </div>
                           )}
                         </td>
@@ -435,7 +398,7 @@ export default function TransferPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>
