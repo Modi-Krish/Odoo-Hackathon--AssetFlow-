@@ -10,7 +10,6 @@ export default function LoginPage() {
   const { login, signup } = useApp();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -59,12 +58,10 @@ export default function LoginPage() {
           showToast(res.message, 'error');
         }
       } else {
-        if (!name) {
-          showToast('Name is required', 'error');
-          setLoading(false);
-          return;
-        }
-        const res = await signup(name, email);
+        // Sign up automatically derives employee name from email prefix (Screen 1)
+        const namePart = email.split('@')[0];
+        const derivedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+        const res = await signup(derivedName, email);
         if (res.success) {
           showToast(res.message, 'success');
           setIsLogin(true);
@@ -83,17 +80,17 @@ export default function LoginPage() {
   return (
     <div className="w-full max-w-md px-4 py-16 animate-fade-in relative z-10">
       
-      {/* Brand Header */}
+      {/* Brand Header (Matches Screen 1) */}
       <div className="text-center mb-8">
-        {/* Raised Tactile Logo Circle */}
-        <div className="inline-flex w-16 h-16 rounded-full bg-indigo-600 items-center justify-center shadow-[6px_6px_12px_rgba(108,99,255,0.25),-6px_-6px_12px_rgba(255,255,255,0.6)] mb-4">
-          <span className="text-white font-extrabold text-2xl tracking-wide font-display">A</span>
+        {/* Tactile Circle Logo with AF */}
+        <div className="inline-flex w-16 h-16 rounded-full bg-slate-900 items-center justify-center shadow-extruded border border-white/20 mb-4 animate-float">
+          <span className="text-indigo-600 font-extrabold text-xl tracking-wide font-display">AF</span>
         </div>
-        <h2 className="text-2xl font-extrabold text-slate-100 tracking-tight font-display">AssetFlow Portal</h2>
+        <h2 className="text-2xl font-extrabold text-slate-100 tracking-tight font-display">AssetFlow - login</h2>
         <p className="text-xs text-slate-300 mt-1 font-bold uppercase tracking-widest">Enterprise Asset & Resource Portal</p>
       </div>
 
-      {/* Main card (32px radius, molded out of clay background) */}
+      {/* Main card */}
       <Card className="rounded-[32px] p-8 shadow-extruded bg-slate-900 border-none hover:shadow-extruded">
         {/* Toggle Mode Tab (recessed track, elevated active slide indicator) */}
         <div className="flex p-1.5 rounded-2xl bg-slate-900 shadow-inset mb-6 border-none">
@@ -114,20 +111,8 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
-            <Input
-              label="Full Name"
-              type="text"
-              placeholder="e.g. John Doe"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              disabled={loading}
-              required
-            />
-          )}
-
           <Input
-            label="Email Address"
+            label="Email"
             type="email"
             placeholder="name@company.com"
             value={email}
@@ -136,15 +121,42 @@ export default function LoginPage() {
             required
           />
 
-          <Input
-            label="Password"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            disabled={loading}
-            required
-          />
+          <div className="space-y-1.5">
+            <Input
+              label="Password"
+              type="password"
+              placeholder="**********"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              disabled={loading}
+              required
+            />
+            
+            {/* Screen 1: Forgot password Link */}
+            {isLogin && (
+              <div className="text-right">
+                <button 
+                  type="button" 
+                  onClick={() => showToast('Password reset link has been dispatched to your email!', 'info')}
+                  className="text-[10px] font-bold text-slate-300 hover:text-indigo-600 border-none shadow-none hover:shadow-none bg-transparent hover:translate-y-0 cursor-pointer"
+                >
+                  Forgot password
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Screen 1 registration helper blocks */}
+          {!isLogin && (
+            <div className="pt-2">
+              <hr className="border-slate-700/20 my-4" />
+              <p className="text-xs font-bold text-slate-150 pl-0.5">New here?</p>
+              
+              <div className="p-3.5 rounded-2xl bg-slate-900 shadow-inset-sm text-slate-300 font-bold text-xs mt-2 leading-relaxed">
+                Sign up creates an employee account admin roles assigned later
+              </div>
+            </div>
+          )}
 
           <Button 
             type="submit" 
@@ -169,7 +181,7 @@ export default function LoginPage() {
         {/* Hackathon Quick Access panel */}
         <div className="mt-8 border-t border-slate-700/20 pt-6">
           <div className="flex items-center gap-1.5 text-[9px] text-slate-300 font-bold uppercase tracking-widest mb-3">
-            <Info size={12} className="text-indigo-600" />
+            <Info size={12} className="text-indigo-600 animate-float" />
             <span>Sandbox Pre-seeded Accounts (1-Click)</span>
           </div>
           

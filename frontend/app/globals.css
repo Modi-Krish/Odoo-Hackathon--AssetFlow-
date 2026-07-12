@@ -21,11 +21,11 @@
   --color-slate-600: #a3b1c6;
   --color-slate-500: #718096;
   
-  /* Text Contrast Mappings for Accessibility */
-  --color-slate-400: #8a96a3;
-  --color-slate-300: #6b7280; /* Muted Text (4.6:1 AA contrast ratio) */
-  --color-slate-200: #4a5568;
-  --color-slate-100: #3d4852; /* Primary Text (7.5:1 AAA contrast ratio) */
+  /* Text Contrast Mappings for Accessibility - Set to pure black */
+  --color-slate-400: #1c1917; /* Dark charcoal for minor labels */
+  --color-slate-300: #000000; /* Solid black */
+  --color-slate-200: #000000; /* Solid black */
+  --color-slate-100: #000000; /* Solid black primary text */
   
   /* Accent Colors: Soft Violet (#6C63FF) & hover (#8B84FF) */
   --color-indigo-950: #eae8ff;
@@ -50,7 +50,7 @@
 
 :root {
   --background: #e0e5ec;
-  --foreground: #3d4852;
+  --foreground: #000000;
   --font-sans: "DM Sans", system-ui, sans-serif;
   --font-mono: "Plus Jakarta Sans", monospace;
 }
@@ -141,7 +141,7 @@ textarea {
   background-color: #e0e5ec !important;
   border: none !important;
   box-shadow: inset 6px 6px 10px rgba(163, 177, 198, 0.6), inset -6px -6px 10px rgba(255, 255, 255, 0.5) !important;
-  color: #3d4852 !important;
+  color: #000000 !important;
   border-radius: 16px !important;
   transition: all 0.3s ease-out !important;
 }
@@ -186,7 +186,7 @@ button.border-slate-700 {
   background-color: #e0e5ec !important;
   border: none !important;
   box-shadow: 6px 6px 12px rgba(163, 177, 198, 0.6), -6px -6px 12px rgba(255, 255, 255, 0.5) !important;
-  color: #3d4852 !important;
+  color: #000000 !important;
   border-radius: 16px !important;
 }
 

@@ -1,195 +1,125 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Card, Button, Badge, showToast } from '@/components/UI';
-import { Notification } from '../../types/notification';
-import { getNotifications, markAsRead, deleteNotification } from '../../services/notifications';
-import { NotificationCard } from '../../components/operations/NotificationCard';
-import { Bell } from 'lucide-react';
-
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: 'not-01',
-    title: 'Asset Assigned',
-    message: 'Dell XPS Laptop-01 has been assigned to John Doe.',
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Yesterday
-    status: 'Unread',
-    type: 'assignment'
-  },
-  {
-    id: 'not-02',
-    title: 'Maintenance Approved',
-    message: 'Repair request for Monitor-01 has been approved.',
-    createdAt: new Date().toISOString(), // Today
-    status: 'Read',
-    type: 'maintenance'
-  },
-  {
-    id: 'not-03',
-    title: 'Resource Booking Confirmed',
-    message: 'Testing Lab booking for July 15, 2026 is confirmed.',
-    createdAt: new Date().toISOString(), // Today
-    status: 'Unread',
-    type: 'booking'
-  }
-];
+import React, { useState } from 'react';
+import { useApp } from '@/context/AppContext';
+import { Card, Button, showToast } from '@/components/UI';
+import { Bell, Check } from 'lucide-react';
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const { notifications, clearAllNotifications } = useApp();
+  const [activeFilter, setActiveFilter] = useState<'All' | 'Alerts' | 'Approvals' | 'Bookings'>('All');
 
-  // Fetch notifications
-  const fetchNotifications = async () => {
-    try {
-      setLoading(true);
-      const data = await getNotifications();
-      if (data && data.length > 0) {
-        setNotifications(data);
-      }
-    } catch (err) {
-      console.warn('API error fetching notifications, loading mock notices', err);
-    } finally {
-      setLoading(false);
+  const handleClear = () => {
+    clearAllNotifications();
+    showToast('Activity feed cleared', 'success');
+  };
+
+  // Seed default items with metadata matching Screen 10 precisely
+  const notificationItems = [
+    { 
+      id: 'n-1', 
+      text: 'Laptop AF-0014 assigned to Priya shah', 
+      category: 'Bookings', // assignments category
+      time: '2m ago', 
+      color: 'bg-indigo-600 shadow-[0_0_8px_#6c63ff]' 
+    },
+    { 
+      id: 'n-2', 
+      text: 'Maintenance request AF-0055 approved', 
+      category: 'Approvals', 
+      time: '18m ago', 
+      color: 'bg-emerald-500 shadow-[0_0_8px_#10b981]' 
+    },
+    { 
+      id: 'n-3', 
+      text: 'Booking confirmed : Room B2 : 2:00 to 3:00 PM', 
+      category: 'Bookings', 
+      time: '1h ago', 
+      color: 'bg-indigo-600 shadow-[0_0_8px_#6c63ff]' 
+    },
+    { 
+      id: 'n-4', 
+      text: 'Transfer approved : AF-0033 to facilities dept', 
+      category: 'Approvals', 
+      time: '3h ago', 
+      color: 'bg-rose-600 shadow-[0_0_8px_#e11d48]' 
+    },
+    { 
+      id: 'n-5', 
+      text: 'Overdue return : AF-0021 was due 3 days ago', 
+      category: 'Alerts', 
+      time: '1d ago', 
+      color: 'bg-amber-500 shadow-[0_0_8px_#f59e0b]' 
+    },
+    { 
+      id: 'n-6', 
+      text: 'audit discrepancy flagged : AF-0088 damaged', 
+      category: 'Alerts', 
+      time: '2d ago', 
+      color: 'bg-slate-500 shadow-[0_0_8px_#64748b]' 
     }
-  };
+  ];
 
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
-
-  // Mark notice as read
-  const handleMarkRead = async (id: string) => {
-    try {
-      setLoading(true);
-      const updated = await markAsRead(id);
-      setNotifications((prev: Notification[]) =>
-        prev.map((n: Notification) => (n.id === id ? updated : n))
-      );
-      showToast('Notification marked as read', 'info');
-    } catch (err) {
-      console.warn('API error on read update, using fallback', err);
-      setNotifications((prev: Notification[]) =>
-        prev.map((n: Notification) => (n.id === id ? { ...n, status: 'Read' } : n))
-      );
-      showToast('Notification marked as read (mock)', 'info');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Delete notification
-  const handleDelete = async (id: string) => {
-    try {
-      setLoading(true);
-      await deleteNotification(id);
-      setNotifications((prev: Notification[]) => prev.filter((n: Notification) => n.id !== id));
-      showToast('Notification deleted', 'success');
-    } catch (err) {
-      console.warn('API error on delete, using fallback', err);
-      setNotifications((prev: Notification[]) => prev.filter((n: Notification) => n.id !== id));
-      showToast('Notification deleted (mock)', 'success');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Mark all as read
-  const handleMarkAllRead = () => {
-    const unread = notifications.filter((n: Notification) => n.status === 'Unread');
-    if (unread.length === 0) return;
-    unread.forEach((n: Notification) => handleMarkRead(n.id));
-    showToast('All notifications marked as read', 'success');
-  };
-
-  const displayedNotifications = filter === 'unread'
-    ? notifications.filter((n: Notification) => n.status === 'Unread')
-    : notifications;
+  // Dynamic filter
+  const filteredNotifications = activeFilter === 'All'
+    ? notificationItems
+    : notificationItems.filter(item => item.category === activeFilter);
 
   return (
     <div className="space-y-6">
+      
       {/* Title */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            <Bell className="text-indigo-400" size={22} />
-            <span>Activity Logs & Notifications</span>
+          <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2 font-display">
+            <Bell className="text-indigo-600 animate-float" size={22} />
+            <span>Activity logs & Notifications</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">Chronological audit stream of asset handoffs, work orders, scheduling reminders, and system alerts.</p>
+          <p className="text-xs text-slate-300 mt-0.5 font-bold uppercase tracking-wider">Chronological operational timeline and warning updates</p>
         </div>
-        
-        {notifications.some((n: Notification) => n.status === 'Unread') && (
-          <Button onClick={handleMarkAllRead} variant="outline" size="sm" className="flex items-center gap-1.5 text-xs">
-            Mark All as Read
-          </Button>
-        )}
+        <Button onClick={handleClear} variant="outline" size="sm" className="flex items-center gap-1.5 text-xs font-display uppercase tracking-wider">
+          <Check size={14} /> Clear logs
+        </Button>
       </div>
 
-      {/* Filter and Content section */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <Card className="max-w-3xl bg-slate-900 border-none shadow-extruded p-6">
         
-        {/* Filter controls column */}
-        <div className="lg:col-span-1 space-y-4">
-          <Card className="p-3 bg-slate-950/40 border-slate-800">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2">Filter Alerts</h3>
-            <div className="space-y-1">
-              <button
-                onClick={() => setFilter('all')}
-                className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${filter === 'all' ? 'bg-indigo-600/10 border border-indigo-500/20 text-indigo-400' : 'text-slate-400 hover:text-slate-200'}`}
-              >
-                <span>All Activities</span>
-                <Badge content={String(notifications.length)} />
-              </button>
-              <button
-                onClick={() => setFilter('unread')}
-                className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${filter === 'unread' ? 'bg-indigo-600/10 border border-indigo-500/20 text-indigo-400' : 'text-slate-400 hover:text-slate-200'}`}
-              >
-                <span>Unread Alerts</span>
-                <Badge content={String(notifications.filter((n: Notification) => n.status === 'Unread').length)} />
-              </button>
-            </div>
-          </Card>
-
-          {/* Quick Stats */}
-          <Card className="text-xs leading-relaxed text-slate-500 space-y-2 p-4 border-slate-850">
-            <h4 className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Notification Info</h4>
-            <p>Notifications are generated automatically based on actions taken inside Asset Allocation, Resource Booking, and Maintenance workflows.</p>
-          </Card>
+        {/* Screen 10 Tab Filters Header */}
+        <div className="flex p-1.5 rounded-2xl bg-slate-900 shadow-inset mb-6 gap-2 border-none max-w-md">
+          {(['All', 'Alerts', 'Approvals', 'Bookings'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveFilter(tab)}
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all border-none ${activeFilter === tab ? 'bg-slate-900 text-indigo-600 shadow-extruded' : 'text-slate-300 hover:text-slate-100'}`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
 
-        {/* Notifications list feed */}
-        <Card className="lg:col-span-3 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <span className="text-xs font-bold text-slate-300 uppercase tracking-wide">
-              {filter === 'unread' ? 'Unread System Alerts' : 'Chronological Feed'}
-            </span>
-          </div>
-
-          {loading && notifications.length === 0 && (
-            <div className="flex justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
-            </div>
+        {/* Screen 10 Roster Timeline */}
+        <div className="space-y-4 pl-1 font-bold text-xs">
+          {filteredNotifications.length === 0 ? (
+            <p className="text-slate-400 italic py-6 text-center">No recent records under this filter.</p>
+          ) : (
+            filteredNotifications.map(item => (
+              <div 
+                key={item.id} 
+                className="flex items-center justify-between p-4 rounded-2xl bg-slate-900 shadow-extruded-sm border border-slate-700/5 hover:translate-x-0.5 transition-all"
+              >
+                <div className="flex items-center gap-3.5">
+                  {/* Category dot shape */}
+                  <div className={`w-2.5 h-2.5 rounded bg-indigo-600 ${item.color}`} />
+                  <span className="text-slate-100 leading-relaxed normal-case">{item.text}</span>
+                </div>
+                <span className="text-[10px] text-slate-300 font-medium select-none ml-4 flex-shrink-0">
+                  {item.time}
+                </span>
+              </div>
+            ))
           )}
+        </div>
 
-          <div className="space-y-4">
-            {displayedNotifications.length === 0 ? (
-              <p className="text-slate-500 text-xs italic py-12 text-center font-semibold">
-                No notifications logged matching this filter.
-              </p>
-            ) : (
-              displayedNotifications.map((notif: Notification) => (
-                <NotificationCard
-                  key={notif.id}
-                  notification={notif}
-                  onMarkRead={handleMarkRead}
-                  onDelete={handleDelete}
-                />
-              ))
-            )}
-          </div>
-        </Card>
-
-      </div>
     </div>
   );
 }

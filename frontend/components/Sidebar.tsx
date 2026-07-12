@@ -17,7 +17,8 @@ import {
   Bell, 
   ChevronRight, 
   Menu, 
-  X 
+  X,
+  ClipboardCheck
 } from 'lucide-react';
 import { Badge } from './UI';
 
@@ -33,14 +34,13 @@ export const Sidebar: React.FC = () => {
 
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
-    { name: 'Assets Directory', path: '/assets', icon: Package, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
-    { name: 'Asset Allocation', path: '/allocation', icon: CalendarRange, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
+    { name: 'Organization setup', path: '/organization', icon: Building2, roles: ['Admin'] },
+    { name: 'Assets', path: '/assets', icon: Package, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
+    { name: 'Allocation & Transfer', path: '/allocation', icon: CalendarRange, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
     { name: 'Resource Booking', path: '/booking', icon: Calendar, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
     { name: 'Maintenance', path: '/maintenance', icon: Wrench, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
-    { name: 'Departments', path: '/departments', icon: Building2, roles: ['Admin'] },
-    { name: 'Asset Categories', path: '/categories', icon: Tags, roles: ['Admin', 'Asset Manager'] },
-    { name: 'Employee Directory', path: '/employees', icon: Users, roles: ['Admin'] },
-    { name: 'Reports & Analytics', path: '/reports', icon: BarChart3, roles: ['Admin', 'Asset Manager', 'Department Head'] },
+    { name: 'Audit', path: '/audit', icon: ClipboardCheck, roles: ['Admin', 'Asset Manager', 'Department Head'] },
+    { name: 'Reports', path: '/reports', icon: BarChart3, roles: ['Admin', 'Asset Manager', 'Department Head'] },
     { name: 'Notifications', path: '/notifications', icon: Bell, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
   ];
 
