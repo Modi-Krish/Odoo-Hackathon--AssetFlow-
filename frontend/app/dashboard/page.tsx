@@ -148,20 +148,23 @@ export default function DashboardPage() {
         
         {/* Quick Actions widget */}
         <Card className="lg:col-span-1">
-          <h4 className="text-sm font-bold text-slate-300 mb-4">Quick Operational Actions</h4>
-          <div className="grid grid-cols-2 gap-3">
+          <h4 className="text-sm font-bold text-slate-100 mb-4 font-display">Quick Actions</h4>
+          <div className="grid grid-cols-2 gap-4">
             {quickActions.map(act => {
               const Icon = act.icon;
+              const textColor = act.color.split(' ')[0]; // E.g., text-indigo-600
               return (
                 <Link 
                   key={act.name} 
                   href={act.path} 
                   className={`
-                    p-4 rounded-xl border bg-slate-950/50 flex flex-col justify-between h-[100px] transition-all cursor-pointer group
-                    ${act.color}
+                    p-4 rounded-2xl bg-slate-900 shadow-extruded flex flex-col justify-between h-[100px] transition-all duration-300 hover:shadow-extruded-hover hover:-translate-y-0.5 border-none group cursor-pointer
+                    ${textColor}
                   `}
                 >
-                  <Icon size={20} className="transition-transform duration-300 group-hover:scale-110" />
+                  <div className="w-8 h-8 rounded-full bg-slate-900 shadow-inset flex items-center justify-center text-slate-200 group-hover:text-indigo-600 transition-colors duration-300">
+                    <Icon size={16} className="transition-transform duration-300 group-hover:scale-110" />
+                  </div>
                   <span className="text-xs font-bold text-slate-200 mt-2">{act.name}</span>
                 </Link>
               );

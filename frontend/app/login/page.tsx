@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Input, Button, Card, showToast } from '@/components/UI';
-import { LogIn, UserPlus, Key, Info } from 'lucide-react';
+import { LogIn, UserPlus, Info } from 'lucide-react';
 import { UserRole } from '@/types';
 
 export default function LoginPage() {
@@ -81,29 +81,33 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="w-full max-w-md px-4">
+    <div className="w-full max-w-md px-4 py-16 animate-fade-in relative z-10">
+      
       {/* Brand Header */}
       <div className="text-center mb-8">
-        <div className="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 items-center justify-center shadow-xl shadow-indigo-600/30 mb-4">
-          <span className="text-white font-black text-2xl tracking-wider">A</span>
+        {/* Raised Tactile Logo Circle */}
+        <div className="inline-flex w-16 h-16 rounded-full bg-indigo-600 items-center justify-center shadow-[6px_6px_12px_rgba(108,99,255,0.25),-6px_-6px_12px_rgba(255,255,255,0.6)] mb-4">
+          <span className="text-white font-extrabold text-2xl tracking-wide font-display">A</span>
         </div>
-        <h2 className="text-2xl font-black text-slate-100 tracking-wide">AssetFlow Portal</h2>
-        <p className="text-xs text-slate-400 mt-1 font-medium">Enterprise Asset & Resource Management System</p>
+        <h2 className="text-2xl font-extrabold text-slate-100 tracking-tight font-display">AssetFlow Portal</h2>
+        <p className="text-xs text-slate-300 mt-1 font-bold uppercase tracking-widest">Enterprise Asset & Resource Portal</p>
       </div>
 
-      {/* Main card */}
-      <Card className="border-slate-800/80 bg-slate-900/80 backdrop-blur-lg">
-        {/* Toggle Mode Tabs */}
-        <div className="flex border-b border-slate-800 mb-6 p-0.5 rounded-xl bg-slate-950/60">
+      {/* Main card (32px radius, molded out of clay background) */}
+      <Card className="rounded-[32px] p-8 shadow-extruded bg-slate-900 border-none hover:shadow-extruded">
+        {/* Toggle Mode Tab (recessed track, elevated active slide indicator) */}
+        <div className="flex p-1.5 rounded-2xl bg-slate-900 shadow-inset mb-6 border-none">
           <button
+            type="button"
             onClick={() => setIsLogin(true)}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${isLogin ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all border-none ${isLogin ? 'bg-slate-900 text-indigo-600 shadow-extruded' : 'text-slate-300 hover:text-slate-100'}`}
           >
             Sign In
           </button>
           <button
+            type="button"
             onClick={() => setIsLogin(false)}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${!isLogin ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all border-none ${!isLogin ? 'bg-slate-900 text-indigo-600 shadow-extruded' : 'text-slate-300 hover:text-slate-100'}`}
           >
             Register
           </button>
@@ -144,18 +148,18 @@ export default function LoginPage() {
 
           <Button 
             type="submit" 
-            variant="gradient"
-            className="w-full mt-2" 
+            variant="primary"
+            className="w-full mt-3.5 h-12 text-sm uppercase tracking-wider font-extrabold" 
             disabled={loading}
           >
             {loading ? (
               <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : isLogin ? (
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-2 font-display">
                 <LogIn size={16} /> Sign In
               </span>
             ) : (
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-2 font-display">
                 <UserPlus size={16} /> Create Account
               </span>
             )}
@@ -163,22 +167,23 @@ export default function LoginPage() {
         </form>
 
         {/* Hackathon Quick Access panel */}
-        <div className="mt-8 border-t border-slate-800/80 pt-6">
-          <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-3">
-            <Info size={12} className="text-slate-500" />
-            <span>Hackathon Sandbox Accounts (1-Click)</span>
+        <div className="mt-8 border-t border-slate-700/20 pt-6">
+          <div className="flex items-center gap-1.5 text-[9px] text-slate-300 font-bold uppercase tracking-widest mb-3">
+            <Info size={12} className="text-indigo-600" />
+            <span>Sandbox Pre-seeded Accounts (1-Click)</span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          
+          <div className="grid grid-cols-2 gap-3">
             {testAccounts.map(acct => (
               <button
                 key={acct.email}
                 type="button"
                 onClick={() => handleQuickLogin(acct.email)}
-                className="p-2.5 rounded-xl border border-slate-800 bg-slate-950/40 text-left hover:border-indigo-500/40 hover:bg-slate-900/60 transition-all group flex flex-col justify-between h-[64px]"
+                className="p-3.5 rounded-2xl bg-slate-900 text-left hover:text-indigo-600 shadow-extruded hover:shadow-extruded-sm active:shadow-inset-sm transition-all border-none flex flex-col justify-between h-[68px] hover:translate-y-[-1px] active:translate-y-[0.5px]"
                 disabled={loading}
               >
-                <span className="text-xs font-bold text-slate-200 group-hover:text-indigo-400 truncate">{acct.name}</span>
-                <span className="text-[9px] text-slate-500 font-medium truncate">{acct.role}</span>
+                <span className="text-xs font-bold text-slate-100 truncate w-full">{acct.name}</span>
+                <span className="text-[9px] text-slate-300 font-bold uppercase tracking-wider truncate w-full mt-1.5 leading-none">{acct.role.split(' ')[0]}</span>
               </button>
             ))}
           </div>
