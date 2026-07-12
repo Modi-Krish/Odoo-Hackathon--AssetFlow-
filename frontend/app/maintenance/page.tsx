@@ -1,260 +1,270 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Maintenance } from '../../types/maintenance';
-import { Asset } from '../../types/allocation';
-import { createMaintenance, getMaintenance, approveMaintenance, rejectMaintenance } from '../../services/maintenance';
-import { MaintenanceTable } from '../../components/operations/MaintenanceTable';
-
-// Mock list of assets for maintenance reporter
-const MOCK_ASSETS: Asset[] = [
-  { id: '1', name: 'Laptop-01 (Dell XPS)', status: 'Available' },
-  { id: '2', name: 'Laptop-02 (MacBook Pro)', status: 'Allocated' },
-  { id: '3', name: 'Laptop-03 (ThinkPad T14)', status: 'Available' },
-  { id: '4', name: 'Monitor-01 (Dell 27")', status: 'Available' }
-];
+import React, { useState } from 'react';
+import { useApp } from '@/context/AppContext';
+import { Card, Button, Input, Select, showToast, Modal } from '@/components/UI';
+import { Wrench, Plus, ArrowRight, UserCheck, Play, CheckCircle } from 'lucide-react';
+import { MaintenancePriority, MaintenanceStatus } from '@/types';
 
 export default function MaintenancePage() {
-  const [tickets, setTickets] = useState<Maintenance[]>([]);
-  const [assets] = useState<Asset[]>(MOCK_ASSETS);
+  const {
+    assets,
+    maintenance,
+    raiseMaintenance,
+    updateMaintenanceStatus
+  } = useApp();
 
-  // Form State
-  const [assetId, setAssetId] = useState<string>('');
-  const [issue, setIssue] = useState<string>('');
-  const [priority, setPriority] = useState<string>('Low');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAssetId, setSelectedAssetId] = useState('');
+  const [issueDescription, setIssueDescription] = useState('');
+  const [priorityLevel, setPriorityLevel] = useState<MaintenancePriority>('Medium');
 
-  // UI State
-  const [loading, setLoading] = useState<boolean>(false);
-  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  // Technician popover state
+  const [assigningId, setAssigningId] = useState<string | null>(null);
+  const [techName, setTechName] = useState('');
+  const [isTechModalOpen, setIsTechModalOpen] = useState(false);
 
-  // Fetch tickets
-  const fetchTickets = async () => {
-    try {
-      setLoading(true);
-      const data = await getMaintenance();
-      setTickets(data);
-    } catch (err) {
-      console.warn('API error fetching maintenance logs, using local state/mocks', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTickets();
-  }, []);
-
-  // Handle Form Submission
-  const handleSubmitTicket = async (e: React.FormEvent) => {
+  const handleSubmitRequest = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!assetId || !issue || !priority) {
-      setToast({ type: 'error', message: 'Please fill in all fields.' });
-      return;
-    }
+    if (!selectedAssetId) return showToast('Please select an asset', 'error');
+    if (!issueDescription.trim()) return showToast('Please describe the issue', 'error');
 
-    try {
-      setLoading(true);
-      const payload = {
-        assetId,
-        issue,
-        priority
-      };
-
-      const newTicket = await createMaintenance(payload);
-      setTickets((prev: Maintenance[]) => [newTicket, ...prev]);
-      setToast({ type: 'success', message: 'Maintenance report submitted!' });
-
-      // Reset
-      setAssetId('');
-      setIssue('');
-      setPriority('Low');
-    } catch (err) {
-      console.warn('API error submitting ticket, using local fallback', err);
-      const fallbackTicket: Maintenance = {
-        id: Math.random().toString(36).substring(2, 9),
-        assetId,
-        issue,
-        priority,
-        status: 'Pending'
-      };
-      setTickets((prev: Maintenance[]) => [fallbackTicket, ...prev]);
-      setToast({ type: 'success', message: 'Report submitted (mock fallback).' });
-      
-      // Reset
-      setAssetId('');
-      setIssue('');
-      setPriority('Low');
-    } finally {
-      setLoading(false);
+    const res = raiseMaintenance(selectedAssetId, issueDescription, priorityLevel);
+    if (res.success) {
+      showToast(res.message, 'success');
+      setSelectedAssetId('');
+      setIssueDescription('');
+      setPriorityLevel('Medium');
+      setIsModalOpen(false);
+    } else {
+      showToast(res.message, 'error');
     }
   };
 
-  // Handle Approve Ticket
-  const handleApprove = async (id: string) => {
-    try {
-      setLoading(true);
-      const updated = await approveMaintenance(id);
-      setTickets((prev: Maintenance[]) =>
-        prev.map((t: Maintenance) => (t.id === id ? updated : t))
-      );
-      setToast({ type: 'success', message: 'Ticket approved successfully!' });
-    } catch (err) {
-      console.warn('API error on approval, using local fallback', err);
-      setTickets((prev: Maintenance[]) =>
-        prev.map((t: Maintenance) => (t.id === id ? { ...t, status: 'Approved' } : t))
-      );
-      setToast({ type: 'success', message: 'Approved successfully (mock fallback).' });
-    } finally {
-      setLoading(false);
+  const handleAssignTechSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assigningId) return;
+    if (!techName.trim()) return showToast('Technician name is required', 'error');
+
+    const res = updateMaintenanceStatus(assigningId, 'Technician Assigned', techName);
+    if (res.success) {
+      showToast('Technician assigned successfully', 'success');
+      setAssigningId(null);
+      setTechName('');
+      setIsTechModalOpen(false);
     }
   };
 
-  // Handle Reject Ticket
-  const handleReject = async (id: string) => {
-    try {
-      setLoading(true);
-      const updated = await rejectMaintenance(id);
-      setTickets((prev: Maintenance[]) =>
-        prev.map((t: Maintenance) => (t.id === id ? updated : t))
-      );
-      setToast({ type: 'success', message: 'Ticket rejected.' });
-    } catch (err) {
-      console.warn('API error on reject, using local fallback', err);
-      setTickets((prev: Maintenance[]) =>
-        prev.map((t: Maintenance) => (t.id === id ? { ...t, status: 'Rejected' } : t))
-      );
-      setToast({ type: 'success', message: 'Rejected successfully (mock fallback).' });
-    } finally {
-      setLoading(false);
+  // Drag-and-drop or click handlers to transition requests between columns
+  const handleAdvanceStatus = (id: string, currentStatus: MaintenanceStatus) => {
+    if (currentStatus === 'Pending') {
+      updateMaintenanceStatus(id, 'Approved');
+      showToast('Request approved', 'success');
+    } else if (currentStatus === 'Approved') {
+      setAssigningId(id);
+      setTechName('');
+      setIsTechModalOpen(true);
+    } else if (currentStatus === 'Technician Assigned') {
+      updateMaintenanceStatus(id, 'In Progress');
+      showToast('Repair work started', 'success');
+    } else if (currentStatus === 'In Progress') {
+      updateMaintenanceStatus(id, 'Resolved');
+      showToast('Issue marked as resolved', 'success');
     }
   };
 
-  // Toast auto-clear
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
+  // Columns list matching Screen 7 exactly
+  const kanbanColumns: { key: MaintenanceStatus; label: string }[] = [
+    { key: 'Pending', label: 'Pending' },
+    { key: 'Approved', label: 'Approved' },
+    { key: 'Technician Assigned', label: 'Technician assigned' },
+    { key: 'In Progress', label: 'in progress' },
+    { key: 'Resolved', label: 'Resolved' }
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50/50 py-10 dark:bg-gray-950">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+    <div className="space-y-6">
+      
+      {/* Title */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2 font-display">
+            <Wrench className="text-indigo-600 animate-float" size={22} />
+            <span>Maintenance Management</span>
+          </h2>
+          <p className="text-xs text-slate-300 mt-0.5 font-bold uppercase tracking-wider">Kanban board workflow for approval, technician allocations, and repairs</p>
+        </div>
+        <Button onClick={() => setIsModalOpen(true)} variant="primary" className="flex items-center gap-1.5 font-display uppercase tracking-wider">
+          <Plus size={16} /> Raise request
+        </Button>
+      </div>
+
+      {/* Screen 7: Kanban Columns Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4.5 overflow-x-auto pb-4">
         
-        {/* Header Section */}
-        <header className="mb-8">
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-            Asset Maintenance Module
-          </h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Log maintenance issues, request repairs, and update hardware statuses.
-          </p>
-        </header>
+        {kanbanColumns.map(col => {
+          const colRequests = maintenance.filter(m => {
+            // Match custom labels mapping type-safe properties
+            if (col.key === 'Technician Assigned') {
+              return m.status === 'Technician Assigned';
+            }
+            return m.status === col.key;
+          });
 
-        {/* Notifications */}
-        {toast && (
-          <div
-            className={`mb-6 rounded-lg p-4 text-sm font-medium border transition-all duration-300 ${
-              toast.type === 'success'
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30'
-                : 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30'
-            }`}
-          >
-            {toast.message}
-          </div>
-        )}
+          return (
+            <div key={col.key} className="flex flex-col min-w-[200px] p-3 bg-slate-900 rounded-[28px] shadow-inset border-none min-h-[480px]">
+              
+              {/* Header */}
+              <div className="pb-3 mb-4 border-b border-slate-700/10 text-center">
+                <span className="text-xs font-black text-slate-300 font-display tracking-wide uppercase">
+                  {col.label}
+                </span>
+                <span className="ml-1.5 text-[10px] text-slate-500 font-bold bg-slate-950 px-1.5 py-0.5 rounded-md shadow-inset-sm">
+                  {colRequests.length}
+                </span>
+              </div>
 
-        <div className="grid gap-8 lg:grid-cols-3">
-          {/* Maintenance Form Panel */}
-          <div className="lg:col-span-1">
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6">
-                Report Issue
-              </h2>
+              {/* Cards wrapper */}
+              <div className="space-y-3 flex-1 overflow-y-auto pr-0.5">
+                {colRequests.map(req => {
+                  const ast = assets.find(a => a.id === req.asset_id);
+                  const isResolved = req.status === 'Resolved';
+                  
+                  return (
+                    <div
+                      key={req.id}
+                      className={`
+                        p-4 rounded-2xl flex flex-col justify-between text-xs font-bold transition-all shadow-extruded hover:-translate-y-0.5 border-none h-[142px]
+                        ${isResolved 
+                          ? 'bg-emerald-900/60 border border-emerald-500/20 text-slate-100 shadow-[0_0_12px_rgba(16,185,129,0.15)]' 
+                          : 'bg-slate-900 text-slate-200'}
+                      `}
+                    >
+                      <div>
+                        {/* Header: tag & issue */}
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <span className={`text-[10px] font-black ${isResolved ? 'text-emerald-400' : 'text-indigo-600'}`}>
+                            {ast?.asset_tag || 'AF-000'}
+                          </span>
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-black border uppercase ${
+                            req.priority === 'Critical' ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' :
+                            req.priority === 'High' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
+                            'bg-slate-950/20 border-slate-800 text-slate-300'
+                          }`}>
+                            {req.priority}
+                          </span>
+                        </div>
+                        
+                        <p className="line-clamp-2 text-slate-100 font-bold leading-normal mt-1 text-[11px] normal-case">
+                          {req.issue}
+                        </p>
 
-              <form onSubmit={handleSubmitTicket} className="space-y-5">
-                {/* Asset selector */}
-                <div>
-                  <label htmlFor="asset-select" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
-                    Asset
-                  </label>
-                  <select
-                    id="asset-select"
-                    value={assetId}
-                    onChange={(e) => setAssetId(e.target.value)}
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
-                    required
-                  >
-                    <option value="">Select Asset...</option>
-                    {assets.map((asset) => (
-                      <option key={asset.id} value={asset.id}>
-                        {asset.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                        {/* Extra stats like tech names */}
+                        {req.technician && (
+                          <p className={`text-[9px] font-medium mt-1.5 flex items-center gap-1 ${isResolved ? 'text-emerald-300' : 'text-slate-300'}`}>
+                            <span>tech:</span>
+                            <span className="font-extrabold">{req.technician}</span>
+                          </p>
+                        )}
+                      </div>
 
-                {/* Issue text field */}
-                <div>
-                  <label htmlFor="issue-desc" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
-                    Issue Description
-                  </label>
-                  <textarea
-                    id="issue-desc"
-                    value={issue}
-                    onChange={(e) => setIssue(e.target.value)}
-                    placeholder="Describe the issue in detail"
-                    rows={4}
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
-                    required
-                  />
-                </div>
+                      {/* Interactive Transitions button */}
+                      {!isResolved && (
+                        <button
+                          onClick={() => handleAdvanceStatus(req.id, req.status)}
+                          className="w-full mt-2 py-1.5 px-3 bg-slate-950/30 rounded-xl hover:bg-indigo-600/10 text-[10px] font-black tracking-wide uppercase transition-colors flex items-center justify-center gap-1 text-slate-300 hover:text-indigo-600 hover:shadow-inset-sm border-none shadow-none"
+                        >
+                          {req.status === 'Pending' && (
+                            <><span>Approve</span><ArrowRight size={10} /></>
+                          )}
+                          {req.status === 'Approved' && (
+                            <><span>Assign Tech</span><UserCheck size={10} /></>
+                          )}
+                          {req.status === 'Technician Assigned' && (
+                            <><span>Start Repair</span><Play size={10} /></>
+                          )}
+                          {req.status === 'In Progress' && (
+                            <><span>Resolve</span><CheckCircle size={10} /></>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
 
-                {/* Priority Selector */}
-                <div>
-                  <label htmlFor="priority-select" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
-                    Priority
-                  </label>
-                  <select
-                    id="priority-select"
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value)}
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
-                    required
-                  >
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                  </select>
-                </div>
-
-                {/* Submit button */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
-                >
-                  Submit Report
-                </button>
-              </form>
             </div>
-          </div>
+          );
+        })}
 
-          {/* Maintenance Table Panel */}
-          <div className="lg:col-span-2 space-y-4">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-              Maintenance Log
-            </h2>
-            <MaintenanceTable
-              tickets={tickets}
-              assets={assets}
-              onApprove={handleApprove}
-              onReject={handleReject}
-              loading={loading}
+      </div>
+
+      {/* Screen 7 Bottom notice */}
+      <p className="text-xs text-slate-300 font-bold italic tracking-wide text-center pt-2">
+        * Approving a card moves the asset to under maintenance, resolving return it to available
+      </p>
+
+      {/* Raise Maintenance Request modal */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Raise Maintenance Ticket">
+        <form onSubmit={handleSubmitRequest} className="space-y-4">
+          <Select
+            label="Select Asset requiring repair"
+            options={[
+              { value: '', label: 'Select Asset....' },
+              ...assets.map(a => ({ value: a.id, label: `${a.name} (${a.asset_tag})` }))
+            ]}
+            value={selectedAssetId}
+            onChange={e => setSelectedAssetId(e.target.value)}
+            required
+          />
+
+          <Select
+            label="Priority Level"
+            options={[
+              { value: 'Low', label: 'Low Priority' },
+              { value: 'Medium', label: 'Medium Priority' },
+              { value: 'High', label: 'High Priority' },
+              { value: 'Critical', label: 'Critical / Breakdown' }
+            ]}
+            value={priorityLevel}
+            onChange={e => setPriorityLevel(e.target.value as MaintenancePriority)}
+          />
+
+          <div className="w-full">
+            <label className="block text-xs font-bold text-slate-300 mb-2 tracking-wider uppercase">Problem details</label>
+            <textarea
+              className="w-full px-5 py-3 rounded-2xl bg-slate-900 text-slate-100 text-sm border-none shadow-inset focus:outline-none focus:shadow-inset-deep focus:ring-2 focus:ring-indigo-600 h-24 resize-none"
+              placeholder="Describe the failure, error warning lights, or damage..."
+              value={issueDescription}
+              onChange={e => setIssueDescription(e.target.value)}
+              required
             />
           </div>
-        </div>
-      </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-700/20">
+            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="gradient">Submit Request</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Assign Technician sub-modal */}
+      <Modal isOpen={isTechModalOpen} onClose={() => setIsTechModalOpen(false)} title="Assign Technician">
+        <form onSubmit={handleAssignTechSubmit} className="space-y-4">
+          <Input
+            label="Technician / Service Name"
+            placeholder="e.g. R varma"
+            value={techName}
+            onChange={e => setTechName(e.target.value)}
+            required
+          />
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-700/20">
+            <Button type="button" variant="outline" onClick={() => setIsTechModalOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="gradient">Assign</Button>
+          </div>
+        </form>
+      </Modal>
+
     </div>
   );
 }

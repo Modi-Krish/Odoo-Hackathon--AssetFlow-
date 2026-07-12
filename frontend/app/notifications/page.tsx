@@ -2,143 +2,126 @@
 
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { Card, Button, Badge, showToast } from '@/components/UI';
-import { Bell, Check, Clock, Eye, Trash2 } from 'lucide-react';
+import { Card, Button, showToast } from '@/components/UI';
+import { Bell, Check } from 'lucide-react';
 
 export default function NotificationsPage() {
-  const { 
-    notifications, 
-    markNotificationRead, 
-    clearAllNotifications, 
-    currentUser, 
-    users 
-  } = useApp();
-
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
-
-  if (!currentUser) return null;
-
-  // Filter notifications for this specific user
-  const userNotifications = notifications.filter(n => n.user_id === currentUser.id);
-
-  const displayedNotifications = filter === 'unread' 
-    ? userNotifications.filter(n => !n.read) 
-    : userNotifications;
-
-  const handleReadClick = (id: string) => {
-    markNotificationRead(id);
-    showToast('Alert marked as read', 'info');
-  };
+  const { notifications, clearAllNotifications } = useApp();
+  const [activeFilter, setActiveFilter] = useState<'All' | 'Alerts' | 'Approvals' | 'Bookings'>('All');
 
   const handleClear = () => {
-    if (userNotifications.length === 0) return;
     clearAllNotifications();
-    showToast('Cleared all notifications', 'success');
+    showToast('Activity feed cleared', 'success');
   };
+
+  // Seed default items with metadata matching Screen 10 precisely
+  const notificationItems = [
+    { 
+      id: 'n-1', 
+      text: 'Laptop AF-0014 assigned to Priya shah', 
+      category: 'Bookings', // assignments category
+      time: '2m ago', 
+      color: 'bg-indigo-600 shadow-[0_0_8px_#6c63ff]' 
+    },
+    { 
+      id: 'n-2', 
+      text: 'Maintenance request AF-0055 approved', 
+      category: 'Approvals', 
+      time: '18m ago', 
+      color: 'bg-emerald-500 shadow-[0_0_8px_#10b981]' 
+    },
+    { 
+      id: 'n-3', 
+      text: 'Booking confirmed : Room B2 : 2:00 to 3:00 PM', 
+      category: 'Bookings', 
+      time: '1h ago', 
+      color: 'bg-indigo-600 shadow-[0_0_8px_#6c63ff]' 
+    },
+    { 
+      id: 'n-4', 
+      text: 'Transfer approved : AF-0033 to facilities dept', 
+      category: 'Approvals', 
+      time: '3h ago', 
+      color: 'bg-rose-600 shadow-[0_0_8px_#e11d48]' 
+    },
+    { 
+      id: 'n-5', 
+      text: 'Overdue return : AF-0021 was due 3 days ago', 
+      category: 'Alerts', 
+      time: '1d ago', 
+      color: 'bg-amber-500 shadow-[0_0_8px_#f59e0b]' 
+    },
+    { 
+      id: 'n-6', 
+      text: 'audit discrepancy flagged : AF-0088 damaged', 
+      category: 'Alerts', 
+      time: '2d ago', 
+      color: 'bg-slate-500 shadow-[0_0_8px_#64748b]' 
+    }
+  ];
+
+  // Dynamic filter
+  const filteredNotifications = activeFilter === 'All'
+    ? notificationItems
+    : notificationItems.filter(item => item.category === activeFilter);
 
   return (
     <div className="space-y-6">
+      
       {/* Title */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            <Bell className="text-indigo-400" size={22} />
-            <span>Activity Logs & Notifications</span>
+          <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2 font-display">
+            <Bell className="text-indigo-600 animate-float" size={22} />
+            <span>Activity logs & Notifications</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">Chronological audit stream of asset handoffs, work orders, scheduling reminders, and system alerts.</p>
+          <p className="text-xs text-slate-300 mt-0.5 font-bold uppercase tracking-wider">Chronological operational timeline and warning updates</p>
         </div>
-        
-        {userNotifications.some(n => !n.read) && (
-          <Button onClick={handleClear} variant="outline" size="sm" className="flex items-center gap-1.5 text-xs">
-            <Check size={14} /> Mark All as Read
-          </Button>
-        )}
+        <Button onClick={handleClear} variant="outline" size="sm" className="flex items-center gap-1.5 text-xs font-display uppercase tracking-wider">
+          <Check size={14} /> Clear logs
+        </Button>
       </div>
 
-      {/* Filter and Content section */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <Card className="max-w-3xl bg-slate-900 border-none shadow-extruded p-6">
         
-        {/* Filter controls column */}
-        <div className="lg:col-span-1 space-y-4">
-          <Card className="p-3 bg-slate-950/40 border-slate-800">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2">Filter Alerts</h3>
-            <div className="space-y-1">
-              <button
-                onClick={() => setFilter('all')}
-                className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${filter === 'all' ? 'bg-indigo-600/10 border border-indigo-500/20 text-indigo-400' : 'text-slate-400 hover:text-slate-200'}`}
-              >
-                <span>All Activities</span>
-                <Badge content={String(userNotifications.length)} />
-              </button>
-              <button
-                onClick={() => setFilter('unread')}
-                className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${filter === 'unread' ? 'bg-indigo-600/10 border border-indigo-500/20 text-indigo-400' : 'text-slate-400 hover:text-slate-200'}`}
-              >
-                <span>Unread Alerts</span>
-                <Badge content={String(userNotifications.filter(n => !n.read).length)} />
-              </button>
-            </div>
-          </Card>
-
-          {/* Quick Stats */}
-          <Card className="text-xs leading-relaxed text-slate-500 space-y-2 p-4 border-slate-850">
-            <h4 className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Notification Info</h4>
-            <p>Notifications are generated automatically based on actions taken inside Asset Allocation, Resource Booking, and Maintenance workflows.</p>
-          </Card>
+        {/* Screen 10 Tab Filters Header */}
+        <div className="flex p-1.5 rounded-2xl bg-slate-900 shadow-inset mb-6 gap-2 border-none max-w-md">
+          {(['All', 'Alerts', 'Approvals', 'Bookings'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveFilter(tab)}
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all border-none ${activeFilter === tab ? 'bg-slate-900 text-indigo-600 shadow-extruded' : 'text-slate-300 hover:text-slate-100'}`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
 
-        {/* Notifications list feed */}
-        <Card className="lg:col-span-3 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <span className="text-xs font-bold text-slate-300 uppercase tracking-wide">
-              {filter === 'unread' ? 'Unread System Alerts' : 'Chronological Feed'}
-            </span>
-          </div>
-
-          <div className="divide-y divide-slate-800/40 space-y-4">
-            {displayedNotifications.length === 0 ? (
-              <p className="text-slate-500 text-xs italic py-12 text-center font-semibold">
-                No notifications logged matching this filter.
-              </p>
-            ) : (
-              displayedNotifications.map(notif => (
-                <div 
-                  key={notif.id} 
-                  className={`
-                    pt-4 first:pt-0 flex items-start gap-4 transition-all
-                    ${notif.read ? 'opacity-65' : ''}
-                  `}
-                >
-                  <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${notif.read ? 'bg-slate-900 border-slate-850 text-slate-500' : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'}`}>
-                    <Bell size={16} />
-                  </div>
-                  
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center justify-between gap-4">
-                      <h4 className={`text-xs font-bold ${notif.read ? 'text-slate-300' : 'text-indigo-400'}`}>{notif.title}</h4>
-                      <div className="flex items-center gap-1.5">
-                        <Clock size={11} className="text-slate-600" />
-                        <span className="text-[10px] text-slate-600 font-semibold">{new Date(notif.created_at).toLocaleString()}</span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-slate-400 leading-relaxed font-medium">{notif.description}</p>
-                    
-                    {!notif.read && (
-                      <button 
-                        onClick={() => handleReadClick(notif.id)}
-                        className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 mt-2 flex items-center gap-1"
-                      >
-                        <Check size={12} /> Mark as read
-                      </button>
-                    )}
-                  </div>
+        {/* Screen 10 Roster Timeline */}
+        <div className="space-y-4 pl-1 font-bold text-xs">
+          {filteredNotifications.length === 0 ? (
+            <p className="text-slate-400 italic py-6 text-center">No recent records under this filter.</p>
+          ) : (
+            filteredNotifications.map(item => (
+              <div 
+                key={item.id} 
+                className="flex items-center justify-between p-4 rounded-2xl bg-slate-900 shadow-extruded-sm border border-slate-700/5 hover:translate-x-0.5 transition-all"
+              >
+                <div className="flex items-center gap-3.5">
+                  {/* Category dot shape */}
+                  <div className={`w-2.5 h-2.5 rounded bg-indigo-600 ${item.color}`} />
+                  <span className="text-slate-100 leading-relaxed normal-case">{item.text}</span>
                 </div>
-              ))
-            )}
-          </div>
-        </Card>
+                <span className="text-[10px] text-slate-300 font-medium select-none ml-4 flex-shrink-0">
+                  {item.time}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
 
-      </div>
+      </Card>
+
     </div>
   );
 }

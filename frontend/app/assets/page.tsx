@@ -2,19 +2,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { Card, Button, Input, Select, Badge, Modal, showToast } from '@/components/UI';
-import { Package, Search, Filter, ArrowUpDown, Plus, Eye, Wrench, ShieldAlert } from 'lucide-react';
-import Link from 'next/link';
+import { Card, Button, Input, Select, Badge, showToast, Modal } from '@/components/UI';
+import { Package, Plus, Edit2, Trash2, Search, ArrowUpDown, QrCode } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { AssetCondition, Asset, AssetCategory } from '@/types';
-import { getAssets, createAsset } from '../../services/assets';
-import { getCategories } from '../../services/categories';
+import { AssetCondition, AssetStatus } from '@/types';
+import Link from 'next/link';
 
 export default function AssetsPage() {
-  const { currentUser } = useApp();
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [categories, setCategories] = useState<AssetCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { 
+    assets, 
+    categories, 
+    departments,
+    addAsset, 
+    deleteAsset, 
+    currentUser 
+  } = useApp();
 
   const searchParams = useSearchParams();
   const [isOpen, setIsOpen] = useState(false);
@@ -23,7 +25,8 @@ export default function AssetsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [sortBy, setSortBy] = useState('asset_tag'); // asset_tag, name, purchase_cost
+  const [departmentFilter, setDepartmentFilter] = useState('');
+  const [sortBy, setSortBy] = useState('asset_tag'); // asset_tag, name
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Form States
@@ -35,6 +38,7 @@ export default function AssetsPage() {
   const [condition, setCondition] = useState<AssetCondition>('New');
   const [location, setLocation] = useState('');
   const [bookable, setBookable] = useState(false);
+  const [assetDeptId, setAssetDeptId] = useState('');
 
   // Open modal if action=new query parameter is present (Quick Action click helper)
   useEffect(() => {
@@ -44,27 +48,7 @@ export default function AssetsPage() {
   }, [searchParams]);
 
   // Permission Gate: Asset Managers and Admins can register assets
-  const canRegister = currentUser?.role === 'admin' || currentUser?.role === 'asset_manager' || currentUser?.role === 'Admin' || currentUser?.role === 'Asset Manager';
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [assetsData, catsData] = await Promise.all([
-        getAssets(),
-        getCategories()
-      ]);
-      setAssets(assetsData);
-      setCategories(catsData);
-    } catch (err) {
-      showToast('Failed to load asset data', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const canRegister = currentUser?.role === 'Admin' || currentUser?.role === 'Asset Manager';
 
   const handleOpenNew = () => {
     if (!canRegister) {
@@ -79,36 +63,38 @@ export default function AssetsPage() {
     setCondition('New');
     setLocation('');
     setBookable(false);
+    setAssetDeptId('');
     setIsOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return showToast('Asset Name is required', 'error');
     if (!categoryId) return showToast('Category is required', 'error');
     if (!serialNumber.trim()) return showToast('Serial Number is required', 'error');
 
-    try {
-      await createAsset({
-        name,
-        category_id: categoryId,
-        serial_number: serialNumber,
-        purchase_date: purchaseDate,
-        purchase_cost: Number(purchaseCost) || 0,
-        condition,
-        location,
-        bookable
-      });
-
-      showToast('Asset registered successfully', 'success');
-      setIsOpen(false);
-      loadData(); // Refresh table
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Failed to register asset', 'error');
+    // Serial unique check
+    if (assets.some(a => a.serial_number.toLowerCase() === serialNumber.toLowerCase())) {
+      return showToast('Serial Number must be unique', 'error');
     }
+
+    addAsset({
+      name,
+      category_id: categoryId,
+      serial_number: serialNumber,
+      purchase_date: purchaseDate,
+      purchase_cost: Number(purchaseCost) || 0,
+      condition,
+      location,
+      bookable,
+      department_id: assetDeptId || undefined
+    });
+
+    showToast('Asset registered successfully', 'success');
+    setIsOpen(false);
   };
 
-  // Filter & Sort Logic
+  // Filter & Sort Logic (Screen 4: Filters categories, status, and departments)
   const filteredAssets = assets
     .filter(asset => {
       const matchQuery = 
@@ -118,8 +104,9 @@ export default function AssetsPage() {
       
       const matchCat = categoryFilter ? asset.category_id === categoryFilter : true;
       const matchStatus = statusFilter ? asset.status === statusFilter : true;
+      const matchDept = departmentFilter ? asset.department_id === departmentFilter : true;
 
-      return matchQuery && matchCat && matchStatus;
+      return matchQuery && matchCat && matchStatus && matchDept;
     })
     .sort((a, b) => {
       let comparison = 0;
@@ -127,8 +114,6 @@ export default function AssetsPage() {
         comparison = a.asset_tag.localeCompare(b.asset_tag);
       } else if (sortBy === 'name') {
         comparison = a.name.localeCompare(b.name);
-      } else if (sortBy === 'purchase_cost') {
-        comparison = a.purchase_cost - b.purchase_cost;
       }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
@@ -142,124 +127,147 @@ export default function AssetsPage() {
     }
   };
 
-  const statusOptions = [
-    { value: '', label: 'All Statuses' },
-    { value: 'Available', label: 'Available' },
-    { value: 'Allocated', label: 'Allocated' },
-    { value: 'Reserved', label: 'Reserved' },
-    { value: 'Under Maintenance', label: 'Under Maintenance' },
-    { value: 'Lost', label: 'Lost' },
-    { value: 'Retired', label: 'Retired' },
-    { value: 'Disposed', label: 'Disposed' }
+  // Select dropdown option arrays formatted matching Screen 4 layout
+  const categoryOptions = [
+    { value: '', label: 'Category' },
+    ...categories.map(c => ({ value: c.id, label: c.name }))
   ];
 
-  const catOptions = [
-    { value: '', label: 'All Categories' },
-    ...categories.map(c => ({ value: c.id, label: c.name }))
+  const statusOptions = [
+    { value: '', label: 'Status' },
+    { value: 'Available', label: 'Available' },
+    { value: 'Allocated', label: 'Allocated' },
+    { value: 'Under Maintenance', label: 'Maintenance' },
+    { value: 'Lost', label: 'Lost' }
+  ];
+
+  const departmentOptions = [
+    { value: '', label: 'Department' },
+    ...departments.map(d => ({ value: d.id, label: d.name }))
   ];
 
   return (
     <div className="space-y-6">
+      
       {/* Title */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            <Package className="text-indigo-400" size={22} />
-            <span>Asset Catalog</span>
+          <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2 font-display">
+            <Package className="text-indigo-600 animate-float" size={22} />
+            <span>Asset registrations and directory</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">Directory list of company hardware, furniture, tools, and bookable spaces.</p>
+          <p className="text-xs text-slate-300 mt-0.5 font-bold uppercase tracking-wider">Directory list of company hardware, furniture, tools, and workspaces</p>
         </div>
         {canRegister && (
-          <Button onClick={handleOpenNew} variant="gradient" className="flex items-center gap-1.5">
-            <Plus size={16} /> Register Asset
+          <Button onClick={handleOpenNew} variant="primary" className="flex items-center gap-1.5 font-display uppercase tracking-wider">
+            + Register Asset
           </Button>
         )}
       </div>
 
-      {/* Search and Filters Card */}
-      <Card className="p-4 flex flex-col md:flex-row gap-3">
-        <div className="flex-1 relative">
-          <Search size={16} className="absolute left-3.5 top-3.5 text-slate-500" />
+      {/* Screen 4: Search and Filters (Neumorphic) */}
+      <div className="p-5 rounded-[24px] bg-slate-900 shadow-extruded flex flex-col md:flex-row gap-4 border-none items-center justify-between">
+        {/* Search Input well */}
+        <div className="w-full md:max-w-md relative">
+          <Search size={15} className="absolute left-4.5 top-3.5 text-slate-400" />
           <input
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-100 text-xs font-semibold focus:outline-none focus:border-indigo-500"
-            placeholder="Search by tag, name, or serial number..."
+            type="text"
+            className="w-full pl-11 pr-5 py-3 rounded-2xl bg-slate-900 text-slate-100 text-xs font-bold border-none shadow-inset focus:outline-none focus:shadow-inset-deep focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 focus:ring-offset-slate-900 placeholder:text-slate-400"
+            placeholder="Search by tag, serial, or QR code.."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
         
-        <div className="flex gap-2">
+        {/* Screen 4 Filters list */}
+        <div className="flex gap-3 w-full md:w-auto overflow-x-auto py-1 justify-end">
           <select
-            className="px-4 py-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-300 text-xs font-semibold focus:outline-none"
+            className="px-4 py-2.5 rounded-2xl bg-slate-900 text-slate-100 text-xs font-bold border-none shadow-inset focus:outline-none focus:shadow-inset-deep focus:ring-2 focus:ring-indigo-600"
             value={categoryFilter}
             onChange={e => setCategoryFilter(e.target.value)}
           >
-            {catOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {categoryOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
 
           <select
-            className="px-4 py-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-300 text-xs font-semibold focus:outline-none"
+            className="px-4 py-2.5 rounded-2xl bg-slate-900 text-slate-100 text-xs font-bold border-none shadow-inset focus:outline-none focus:shadow-inset-deep focus:ring-2 focus:ring-indigo-600"
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
           >
             {statusOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
-        </div>
-      </Card>
 
-      {/* Directory Table */}
-      <Card className="p-0 overflow-hidden border-slate-800">
+          <select
+            className="px-4 py-2.5 rounded-2xl bg-slate-900 text-slate-100 text-xs font-bold border-none shadow-inset focus:outline-none focus:shadow-inset-deep focus:ring-2 focus:ring-indigo-600"
+            value={departmentFilter}
+            onChange={e => setDepartmentFilter(e.target.value)}
+          >
+            {departmentOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Screen 4 Directory Table */}
+      <Card className="p-0 overflow-hidden border-none shadow-extruded">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-slate-800 bg-slate-900/40 text-slate-400 font-bold uppercase tracking-wider select-none">
-                <th className="py-4 px-6 cursor-pointer hover:text-slate-200" onClick={() => toggleSort('asset_tag')}>
-                  <span className="flex items-center gap-1">Asset Tag <ArrowUpDown size={12} /></span>
+              <tr className="border-b border-slate-700/20 bg-slate-850/40 text-slate-300 font-extrabold uppercase tracking-wider select-none">
+                <th className="py-4 px-6 cursor-pointer hover:text-slate-100 font-display" onClick={() => toggleSort('asset_tag')}>
+                  <span className="flex items-center gap-1">Tag <ArrowUpDown size={12} /></span>
                 </th>
-                <th className="py-4 px-6 cursor-pointer hover:text-slate-200" onClick={() => toggleSort('name')}>
+                <th className="py-4 px-6 cursor-pointer hover:text-slate-100 font-display" onClick={() => toggleSort('name')}>
                   <span className="flex items-center gap-1">Name <ArrowUpDown size={12} /></span>
                 </th>
-                <th className="py-4 px-6">Category</th>
-                <th className="py-4 px-6">Condition</th>
-                <th className="py-4 px-6">Location</th>
-                <th className="py-4 px-6 text-center">Status</th>
-                <th className="py-4 px-6 text-right">Action</th>
+                <th className="py-4 px-6 font-display">Category</th>
+                <th className="py-4 px-6 font-display">Status</th>
+                <th className="py-4 px-6 font-display">Location</th>
+                {canRegister && <th className="py-4 px-6 text-right font-display">Actions</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/40 text-slate-300 font-medium">
-              {loading ? (
+            <tbody className="divide-y divide-slate-700/10 text-slate-100 font-bold">
+              {filteredAssets.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500 text-sm font-semibold">
-                    Loading assets...
-                  </td>
-                </tr>
-              ) : filteredAssets.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500 text-sm font-semibold">
-                    No assets matched search queries.
-                  </td>
+                  <td colSpan={6} className="py-8 text-center text-slate-400 italic">No assets match your current catalog filters.</td>
                 </tr>
               ) : (
                 filteredAssets.map(asset => {
                   const cat = categories.find(c => c.id === asset.category_id);
+                  const isMaintenance = asset.status === 'Under Maintenance';
+                  const displayStatus = isMaintenance ? 'Maintenance' : asset.status;
+                  
                   return (
-                    <tr key={asset.id} className="hover:bg-slate-900/20 transition-all">
-                      <td className="py-4 px-6 font-bold text-indigo-400">{asset.asset_tag}</td>
-                      <td className="py-4 px-6 font-bold text-slate-100">{asset.name}</td>
-                      <td className="py-4 px-6 text-slate-400">{cat ? cat.name : 'Unknown'}</td>
-                      <td className="py-4 px-6">{asset.condition}</td>
-                      <td className="py-4 px-6 text-slate-400">{asset.location}</td>
-                      <td className="py-4 px-6 text-center">
-                        <Badge content={asset.status} />
-                      </td>
-                      <td className="py-4 px-6 text-right">
-                        <Link 
-                          href={`/assets/${asset.id}`} 
-                          className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-300 hover:text-indigo-400 bg-slate-900 px-3 py-1.5 border border-slate-800 hover:border-indigo-500/30 rounded-lg transition-all"
-                        >
-                          <Eye size={12} /> Detail
+                    <tr key={asset.id} className="hover:bg-slate-850/20 transition-all">
+                      <td className="py-4 px-6 text-indigo-600 font-extrabold">
+                        <Link href={`/assets/${asset.id}`} className="hover:underline flex items-center gap-1.5">
+                          <span>{asset.asset_tag}</span>
+                          <QrCode size={12} className="text-slate-400" />
                         </Link>
                       </td>
+                      <td className="py-4 px-6 text-slate-100">
+                        <Link href={`/assets/${asset.id}`} className="hover:underline">{asset.name}</Link>
+                      </td>
+                      <td className="py-4 px-6 text-slate-300">{cat ? cat.name : 'Uncategorized'}</td>
+                      <td className="py-4 px-6">
+                        <Badge content={displayStatus} />
+                      </td>
+                      <td className="py-4 px-6 text-slate-300">{asset.location || 'HQ Floor 2'}</td>
+                      {canRegister && (
+                        <td className="py-4 px-6 text-right">
+                          <button
+                            onClick={() => {
+                              if (confirm('Delete this asset from registry?')) {
+                                deleteAsset(asset.id);
+                                showToast('Asset removed from inventory', 'success');
+                              }
+                            }}
+                            className="p-2 text-rose-600 hover:text-rose-500 hover:shadow-extruded-sm active:shadow-inset-sm rounded-full transition-all border-none bg-slate-900"
+                            title="Delete Asset"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })
@@ -269,19 +277,19 @@ export default function AssetsPage() {
         </div>
       </Card>
 
-      {/* Asset Registration Modal */}
-      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Register Asset">
+      {/* Creation Modal */}
+      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Register New Asset">
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             label="Asset Name"
-            placeholder="e.g. Dell Curved 34-inch Monitor"
+            placeholder="e.g. Dell Monitor 27 inch"
             value={name}
             onChange={e => setName(e.target.value)}
             required
           />
 
           <Select
-            label="Category"
+            label="Asset Category"
             options={categories.map(c => ({ value: c.id, label: c.name }))}
             value={categoryId}
             onChange={e => setCategoryId(e.target.value)}
@@ -289,64 +297,69 @@ export default function AssetsPage() {
           />
 
           <Input
-            label="Serial Number (Unique)"
-            placeholder="e.g. SN-8822-CURV"
+            label="Serial Number"
+            placeholder="e.g. SN-DELL-MON27"
             value={serialNumber}
             onChange={e => setSerialNumber(e.target.value)}
             required
           />
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Acquisition Date"
-              type="date"
-              value={purchaseDate}
-              onChange={e => setPurchaseDate(e.target.value)}
-            />
-            <Input
-              label="Purchase Cost ($)"
-              type="number"
-              placeholder="e.g. 599"
-              value={purchaseCost}
-              onChange={e => setPurchaseCost(e.target.value)}
-            />
-          </div>
+          <Input
+            label="Purchase Date"
+            type="date"
+            value={purchaseDate}
+            onChange={e => setPurchaseDate(e.target.value)}
+          />
 
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="Initial Condition"
-              options={[
-                { value: 'New', label: 'New' },
-                { value: 'Good', label: 'Good' },
-                { value: 'Fair', label: 'Fair' },
-                { value: 'Poor', label: 'Poor' },
-                { value: 'Broken', label: 'Broken' }
-              ]}
-              value={condition}
-              onChange={e => setCondition(e.target.value as AssetCondition)}
-            />
-            <Input
-              label="Location"
-              placeholder="e.g. Floor 2 Cabinet C"
-              value={location}
-              onChange={e => setLocation(e.target.value)}
-            />
-          </div>
+          <Input
+            label="Purchase Cost ($)"
+            type="number"
+            placeholder="e.g. 299"
+            value={purchaseCost}
+            onChange={e => setPurchaseCost(e.target.value)}
+          />
 
-          <div className="flex items-center gap-3 py-2">
+          <Select
+            label="Current Condition"
+            options={[
+              { value: 'New', label: 'New' },
+              { value: 'Good', label: 'Good' },
+              { value: 'Fair', label: 'Fair' },
+              { value: 'Poor', label: 'Poor' },
+              { value: 'Broken', label: 'Broken' }
+            ]}
+            value={condition}
+            onChange={e => setCondition(e.target.value as AssetCondition)}
+          />
+
+          <Select
+            label="Assigned Department"
+            options={departmentOptions}
+            value={assetDeptId}
+            onChange={e => setAssetDeptId(e.target.value)}
+          />
+
+          <Input
+            label="Storage Location"
+            placeholder="e.g. IT Inventory Room"
+            value={location}
+            onChange={e => setLocation(e.target.value)}
+          />
+
+          <div className="flex items-center gap-2 pt-1 pl-0.5">
             <input
               type="checkbox"
               id="bookable"
-              className="w-4 h-4 text-indigo-600 border-slate-800 bg-slate-950 rounded focus:ring-indigo-500"
+              className="w-4 h-4 rounded bg-slate-900 border-none shadow-inset focus:ring-2 focus:ring-indigo-600"
               checked={bookable}
               onChange={e => setBookable(e.target.checked)}
             />
-            <label htmlFor="bookable" className="text-xs text-slate-300 font-semibold cursor-pointer">
-              Shared resource (Available for calendar slot booking)
+            <label htmlFor="bookable" className="text-xs font-bold text-slate-300 select-none">
+              Mark as Bookable Shared Resource
             </label>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-700/20">
             <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
               Cancel
             </Button>
@@ -356,6 +369,7 @@ export default function AssetsPage() {
           </div>
         </form>
       </Modal>
+
     </div>
   );
 }

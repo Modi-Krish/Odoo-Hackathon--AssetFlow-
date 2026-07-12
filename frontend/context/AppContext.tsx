@@ -1,7 +1,6 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { loginAPI, signupAPI, getProfileAPI } from '../services/auth';
 import {
   User,
   Department,
@@ -110,30 +109,54 @@ const defaultCategories: AssetCategory[] = [
 ];
 
 const defaultAssets: Asset[] = [
-  { id: 'a-1', asset_tag: 'AF-0001', name: 'MacBook Pro 16"', category_id: 'c-1', serial_number: 'MBP-2026-AF01', condition: 'New', status: 'Allocated', purchase_date: '2026-01-15', purchase_cost: 2499, location: 'HQ Floor 2', bookable: false, assigned_to_id: 'u-4', department_id: 'd-1' },
-  { id: 'a-2', asset_tag: 'AF-0002', name: 'Dell XPS 15', category_id: 'c-1', serial_number: 'DELL-XPS-AF02', condition: 'Good', status: 'Available', purchase_date: '2025-06-10', purchase_cost: 1899, location: 'IT Inventory Room', bookable: false },
-  { id: 'a-3', asset_tag: 'AF-0003', name: 'Ergonomic Standing Desk', category_id: 'c-2', serial_number: 'DESK-ERG-AF03', condition: 'Good', status: 'Allocated', purchase_date: '2025-09-01', purchase_cost: 650, location: 'HQ Floor 1', bookable: false, assigned_to_id: 'u-5', department_id: 'd-2' },
-  { id: 'a-4', asset_tag: 'AF-0004', name: 'Herman Miller Aeron Chair', category_id: 'c-2', serial_number: 'HM-AER-AF04', condition: 'Good', status: 'Available', purchase_date: '2024-11-12', purchase_cost: 1200, location: 'IT Inventory Room', bookable: false },
-  { id: 'a-5', asset_tag: 'AF-0005', name: 'Meeting Room B2 Screen (65")', category_id: 'c-1', serial_number: 'SAMP-65-AF05', condition: 'Good', status: 'Available', purchase_date: '2025-02-20', purchase_cost: 899, location: 'Conference Room B2', bookable: true },
-  { id: 'a-6', asset_tag: 'AF-0006', name: 'Tesla Model 3 (Company Car)', category_id: 'c-3', serial_number: 'TSLA-M3-AF06', condition: 'Good', status: 'Under Maintenance', purchase_date: '2024-05-18', purchase_cost: 38000, location: 'HQ Parking Lot A', bookable: true }
+  { id: 'a-1', asset_tag: 'AF-0001', name: 'MacBook Pro 16"', category_id: 'c-1', serial_number: 'MBP-2026-AF01', condition: 'New', status: 'Allocated', purchase_date: '2026-01-15', purchase_cost: 2499, location: 'Desk E12', bookable: false, assigned_to_id: 'u-4', department_id: 'd-1' },
+  { id: 'a-2', asset_tag: 'AF-003', name: 'Dell laptop', category_id: 'c-1', serial_number: 'DELL-LAP-AF03', condition: 'Good', status: 'Allocated', purchase_date: '2025-06-10', purchase_cost: 1500, location: 'Desk E12', bookable: false, assigned_to_id: 'u-4', department_id: 'd-1' },
+  { id: 'a-3', asset_tag: 'AF-9921', name: 'Office chair', category_id: 'c-2', serial_number: 'CHAIR-OFF-9921', condition: 'Fair', status: 'Allocated', purchase_date: '2025-09-01', purchase_cost: 350, location: 'Desk E14', bookable: false, assigned_to_id: 'u-5', department_id: 'd-1' },
+  { id: 'a-4', asset_tag: 'AF-9838', name: 'Monitor', category_id: 'c-1', serial_number: 'MONITOR-9838', condition: 'Poor', status: 'Allocated', purchase_date: '2024-11-12', purchase_cost: 450, location: 'Desk E15', bookable: false, assigned_to_id: 'u-5', department_id: 'd-1' },
+  { id: 'a-5', asset_tag: 'AF-0062', name: 'Projector', category_id: 'c-1', serial_number: 'PROJ-0062', condition: 'Good', status: 'Available', purchase_date: '2025-02-20', purchase_cost: 899, location: 'Conference Room B2', bookable: true },
+  { id: 'a-6', asset_tag: 'AF-0003', name: 'AC Unit', category_id: 'c-1', serial_number: 'ACUNIT-003', condition: 'Good', status: 'Available', purchase_date: '2024-05-18', purchase_cost: 1800, location: 'IT Inventory Room', bookable: false },
+  { id: 'a-7', asset_tag: 'AF-0078', name: 'Forklift', category_id: 'c-4', serial_number: 'FLIFT-0078', condition: 'Good', status: 'Available', purchase_date: '2024-03-10', purchase_cost: 12000, location: 'Warehouse Floor 1', bookable: false },
+  { id: 'a-8', asset_tag: 'AF-897', name: 'Printer', category_id: 'c-1', serial_number: 'PRINTER-897', condition: 'Good', status: 'Available', purchase_date: '2025-01-22', purchase_cost: 600, location: 'Admin Floor 1', bookable: false },
+  { id: 'a-9', asset_tag: 'AF-873', name: 'Chair', category_id: 'c-2', serial_number: 'CHAIR-873', condition: 'New', status: 'Available', purchase_date: '2025-06-15', purchase_cost: 180, location: 'Breakroom', bookable: false },
+  { id: 'a-10', name: 'Conference room B2', category_id: 'c-2', asset_tag: 'AF-ROOM-B2', serial_number: 'ROOM-B2-CONF', condition: 'New', status: 'Available', purchase_date: '2023-01-01', purchase_cost: 0, location: 'HQ Floor 1', bookable: true }
 ];
 
 const defaultAllocations: AssetAllocation[] = [
   { id: 'al-1', asset_id: 'a-1', employee_id: 'u-4', allocation_date: '2026-02-01', expected_return: '2026-12-31', returned: false },
-  { id: 'al-2', asset_id: 'a-3', employee_id: 'u-5', allocation_date: '2025-09-05', expected_return: '2026-06-30', returned: false }
+  { id: 'al-2', asset_id: 'a-2', employee_id: 'u-4', allocation_date: '2025-06-10', expected_return: '2026-06-30', returned: false },
+  { id: 'al-3', asset_id: 'a-3', employee_id: 'u-5', allocation_date: '2025-09-01', expected_return: '2026-07-30', returned: false },
+  { id: 'al-4', asset_id: 'a-4', employee_id: 'u-5', allocation_date: '2024-11-12', expected_return: '2026-08-30', returned: false }
 ];
 
 const defaultMaintenance: MaintenanceRequest[] = [
-  { id: 'm-1', asset_id: 'a-6', issue: 'Battery temperature sensor warning on display dashboard.', priority: 'High', status: 'In Progress', created_by: 'u-2', technician: 'Electra Tesla Center', created_at: '2026-07-10T10:00:00Z' }
+  { id: 'm-1', asset_id: 'a-5', issue: 'Projector bulb not turning on', priority: 'Medium', status: 'Pending', created_by: 'u-2', created_at: '2026-07-06T10:00:00Z' },
+  { id: 'm-2', asset_id: 'a-6', issue: 'ac unit noisy compressor', priority: 'High', status: 'Approved', created_by: 'u-2', created_at: '2026-07-06T11:00:00Z' },
+  { id: 'm-3', asset_id: 'a-7', issue: 'forklift steering control stiff check', priority: 'Critical', status: 'Technician Assigned', created_by: 'u-2', technician: 'R varma', created_at: '2026-07-07T09:00:00Z' },
+  { id: 'm-4', asset_id: 'a-8', issue: 'Printer Jam parts ordered', priority: 'Medium', status: 'In Progress', created_by: 'u-3', created_at: '2026-07-07T14:00:00Z' },
+  { id: 'm-5', asset_id: 'a-9', issue: 'Chair repair resolved 7 Jul', priority: 'Low', status: 'Resolved', created_by: 'u-3', technician: 'Carpenter Shop', created_at: '2026-07-07T15:30:00Z' }
 ];
 
 const defaultBookings: Booking[] = [
-  { id: 'b-1', asset_id: 'a-5', booked_by: 'u-3', start_time: '2026-07-12T09:00:00Z', end_time: '2026-07-12T10:00:00Z', status: 'Completed', created_at: '2026-07-11T15:00:00Z' }
+  { id: 'b-1', asset_id: 'a-10', booked_by: 'u-3', start_time: '2026-07-07T09:00:00Z', end_time: '2026-07-07T10:00:00Z', status: 'Upcoming', created_at: '2026-07-06T15:00:00Z' }
 ];
 
 const defaultNotifications: Notification[] = [
-  { id: 'n-1', title: 'Asset Assigned', description: 'MacBook Pro 16" (AF-0001) has been assigned to Priya Sharma.', user_id: 'u-4', read: false, created_at: '2026-07-12T08:00:00Z' },
-  { id: 'n-2', title: 'Maintenance Ongoing', description: 'Tesla Model 3 (AF-0006) maintenance request approved and technician assigned.', user_id: 'u-2', read: true, created_at: '2026-07-11T12:00:00Z' },
+  { id: 'n-1', title: 'Asset Assigned', description: 'Laptop AF-0014 assigned to Priya shah', user_id: 'u-4', read: false, created_at: '2026-07-12T08:00:00Z' },
+  { id: 'n-2', title: 'Maintenance Approved', description: 'Maintenance request AF-0055 approved', user_id: 'u-2', read: false, created_at: '2026-07-12T07:45:00Z' },
+  { id: 'n-3', title: 'Booking Confirmed', description: 'Booking confirmed : Room B2 : 2:00 to 3:00 PM', user_id: 'u-3', read: false, created_at: '2026-07-12T07:00:00Z' },
+  { id: 'n-4', title: 'Transfer Approved', description: 'Transfer approved : AF-0033 to facilities dept', user_id: 'u-4', read: false, created_at: '2026-07-12T05:00:00Z' },
+  { id: 'n-5', title: 'Overdue Alert', description: 'Overdue return : AF-0021 was due 3 days ago', user_id: 'u-2', read: false, created_at: '2026-07-11T10:00:00Z' },
+  { id: 'n-6', title: 'Discrepancy Flagged', description: 'audit discrepancy flagged : AF-0088 damaged', user_id: 'u-2', read: false, created_at: '2026-07-10T10:00:00Z' }
+];
+
+const defaultAudits: AuditCycle[] = [
+  { id: 'aud-1', name: 'Q3 audit: Engineering dept - 1-15 jul', scope_type: 'department', scope_value: 'Engineering', status: 'Active', auditor_id: 'u-1', created_at: '2026-07-07T09:00:00Z' }
+];
+
+const defaultAuditItems: AuditItem[] = [
+  { id: 'ai-1', audit_cycle_id: 'aud-1', asset_id: 'a-2', status: 'Verified', notes: 'Asset verified at current location' },
+  { id: 'ai-2', audit_cycle_id: 'aud-1', asset_id: 'a-3', status: 'Missing', notes: 'Asset not found on desk' },
+  { id: 'ai-3', audit_cycle_id: 'aud-1', asset_id: 'a-4', status: 'Damaged', notes: 'Monitor screen cracked' }
 ];
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -154,6 +177,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Initialize from LocalStorage
   useEffect(() => {
     const loadData = () => {
+      const seeded = localStorage.getItem('af_seeded_v2');
+      if (!seeded) {
+        localStorage.removeItem('af_users');
+        localStorage.removeItem('af_departments');
+        localStorage.removeItem('af_categories');
+        localStorage.removeItem('af_assets');
+        localStorage.removeItem('af_allocations');
+        localStorage.removeItem('af_bookings');
+        localStorage.removeItem('af_maintenance');
+        localStorage.removeItem('af_notifications');
+        localStorage.removeItem('af_audits');
+        localStorage.removeItem('af_audit_items');
+        localStorage.setItem('af_seeded_v2', 'true');
+      }
+
       const getLocal = <T,>(key: string, fallback: T): T => {
         const item = localStorage.getItem(key);
         return item ? JSON.parse(item) : fallback;
@@ -168,19 +206,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setBookings(getLocal('af_bookings', defaultBookings));
       setMaintenance(getLocal('af_maintenance', defaultMaintenance));
       setNotifications(getLocal('af_notifications', defaultNotifications));
-      setAudits(getLocal('af_audits', []));
-      setAuditItems(getLocal('af_audit_items', []));
+      setAudits(getLocal('af_audits', defaultAudits));
+      setAuditItems(getLocal('af_audit_items', defaultAuditItems));
       
-      const loggedInToken = localStorage.getItem('token');
-      if (loggedInToken) {
-        // Fetch profile
-        getProfileAPI().then(res => {
-          if (res.user) {
-            setCurrentUser(res.user);
-          }
-        }).catch(() => {
-          localStorage.removeItem('token');
-        });
+      const loggedIn = localStorage.getItem('af_current_user');
+      if (loggedIn) {
+        setCurrentUser(JSON.parse(loggedIn));
       }
       setIsLoaded(true);
     };
@@ -195,32 +226,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Auth Operations
   const login = async (email: string, role?: UserRole) => {
-    try {
-      const res = await loginAPI(email, 'password123'); // Assuming default password for hackathon
-      if (res.token && res.user) {
-        localStorage.setItem('token', res.token);
-        setCurrentUser(res.user);
-        return { success: true, message: 'Logged in successfully', user: res.user };
-      }
-      return { success: false, message: res.message || 'Login failed' };
-    } catch (err: any) {
-      return { success: false, message: err.response?.data?.message || 'Login error' };
+    const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (foundUser) {
+      // Allow overriding role for ease of hackathon demo testing
+      const userToSet = role ? { ...foundUser, role } : foundUser;
+      setCurrentUser(userToSet);
+      sync('af_current_user', userToSet);
+      return { success: true, message: 'Logged in successfully', user: userToSet };
     }
+    return { success: false, message: 'User not found' };
   };
 
   const signup = async (name: string, email: string) => {
-    try {
-      const res = await signupAPI(name, email, 'password123');
-      return { success: true, message: 'Account created successfully' };
-    } catch (err: any) {
-      return { success: false, message: err.response?.data?.message || 'Signup error' };
+    if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+      return { success: false, message: 'Email already exists' };
     }
+    const newUser: User = {
+      id: `u-${Date.now()}`,
+      name,
+      email,
+      role: 'Employee', // Default role
+      status: true
+    };
+    const updated = [...users, newUser];
+    setUsers(updated);
+    sync('af_users', updated);
+    return { success: true, message: 'Account created successfully! Contact Admin for role activation.' };
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
     setCurrentUser(null);
-    if (typeof window !== 'undefined') window.location.href = '/login';
+    localStorage.removeItem('af_current_user');
   };
 
   // Notification Helper

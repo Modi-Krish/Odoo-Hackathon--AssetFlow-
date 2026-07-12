@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useApp } from '@/context/AppContext';
-import { Card, Button, Badge, showToast } from '@/components/UI';
+import { Card, Button, Badge } from '@/components/UI';
 import { 
   Package, 
   CheckCircle, 
@@ -11,10 +11,6 @@ import {
   Calendar, 
   ArrowLeftRight, 
   AlertCircle,
-  PlusCircle,
-  Play,
-  FileText,
-  Clock,
   ArrowUpRight
 } from 'lucide-react';
 import Link from 'next/link';
@@ -26,20 +22,22 @@ export default function DashboardPage() {
     bookings, 
     transfers, 
     maintenance, 
-    notifications,
     currentUser,
-    users
+    users,
+    departments
   } = useApp();
 
-  // Calculations
-  const totalAssetsCount = assets.length;
+  // Screen 2 Calculations
   const availableAssetsCount = assets.filter(a => a.status === 'Available').length;
   const allocatedAssetsCount = assets.filter(a => a.status === 'Allocated').length;
   const maintenanceCount = maintenance.filter(m => m.status !== 'Resolved').length;
   const activeBookingsCount = bookings.filter(b => b.status === 'Upcoming' || b.status === 'Ongoing').length;
   const pendingTransfersCount = transfers.filter(t => t.status === 'Pending').length;
+  
+  // Upcoming returns calculation (Allocations that are active and have expected return dates)
+  const upcomingReturnsCount = allocations.filter(al => !al.returned && al.expected_return).length;
 
-  // Overdue Returns Calculation (Expected return date is past and returned = false)
+  // Overdue count calculation
   const overdueAllocations = allocations.filter(al => {
     if (al.returned || !al.expected_return) return false;
     const expDate = new Date(al.expected_return);
@@ -47,273 +45,164 @@ export default function DashboardPage() {
   });
   const overdueCount = overdueAllocations.length;
 
-  // Category counts for charts
-  const categoryCounts = assets.reduce((acc, curr) => {
-    acc[curr.category_id] = (acc[curr.category_id] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  // Compile Dynamic Recent Activities matching the mockup visual structure
+  const getRecentActivities = () => {
+    const activities: string[] = [];
 
-  const electronicsCount = categoryCounts['c-1'] || 0;
-  const furnitureCount = categoryCounts['c-2'] || 0;
-  const vehiclesCount = categoryCounts['c-3'] || 0;
-  const labsCount = categoryCounts['c-4'] || 0;
+    // 1. Latest Allocation
+    const activeAllocations = [...allocations].filter(al => !al.returned);
+    if (activeAllocations.length > 0) {
+      const latestAlloc = activeAllocations[activeAllocations.length - 1];
+      const ast = assets.find(a => a.id === latestAlloc.asset_id);
+      const emp = users.find(u => u.id === latestAlloc.employee_id);
+      const dept = emp ? departments.find(d => d.id === emp.department_id) : null;
+      if (ast && emp) {
+        activities.push(`${ast.name} ${ast.asset_tag} - allocated to ${emp.name} - ${dept?.name || 'IT dept'}`);
+      }
+    } else {
+      activities.push('Laptop AF-0114 - allocated to Priya shah - IT dept'); // Seed default if empty
+    }
 
-  // Quick Action Handlers (simulate logs or triggers)
-  const quickActions = [
-    { name: 'Register Asset', path: '/assets?action=new', icon: PlusCircle, color: 'text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/10' },
-    { name: 'Book Resource', path: '/booking?action=new', icon: Calendar, color: 'text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/10' },
-    { name: 'Raise Maintenance', path: '/maintenance?action=new', icon: Wrench, color: 'text-rose-400 border-rose-500/20 hover:bg-rose-500/10' },
-    { name: 'New Allocation', path: '/allocation?action=new', icon: CalendarRange, color: 'text-sky-400 border-sky-500/20 hover:bg-sky-500/10' },
-  ];
+    // 2. Latest Booking
+    if (bookings.length > 0) {
+      const latestBooking = bookings[bookings.length - 1];
+      const ast = assets.find(a => a.id === latestBooking.asset_id);
+      if (ast) {
+        activities.push(`${ast.name} - booking confirmed - ${latestBooking.start_time} to ${latestBooking.end_time}`);
+      }
+    } else {
+      activities.push('Room B2 - booking confirmed - 2:00 to 3:00 PM'); // Seed default
+    }
+
+    // 3. Latest Maintenance
+    if (maintenance.length > 0) {
+      const latestMaint = maintenance[maintenance.length - 1];
+      const ast = assets.find(a => a.id === latestMaint.asset_id);
+      if (ast) {
+        activities.push(`${ast.name} ${ast.asset_tag} - maintenance ${latestMaint.status.toLowerCase()}`);
+      }
+    } else {
+      activities.push('Projector AF-0062 - maintenance resolved'); // Seed default
+    }
+
+    return activities;
+  };
+
+  const recentActivitiesList = getRecentActivities();
 
   return (
     <div className="space-y-6">
-      {/* Header Info */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-100">Welcome Back, {currentUser?.name}</h2>
-          <p className="text-xs text-slate-400 mt-0.5">Here is a real-time snapshot of the organization assets and resource activities.</p>
-        </div>
-        <div className="text-xs text-slate-500 font-semibold bg-slate-900 px-3.5 py-2 rounded-xl border border-slate-800 flex items-center gap-2 w-max self-start md:self-auto">
-          <Clock size={14} className="text-indigo-400" />
-          <span>Portal Session Validated (JWT Simulation)</span>
-        </div>
+      
+      {/* Welcome Header */}
+      <div>
+        <h2 className="text-xl font-bold text-slate-100 font-display">Today's Overview</h2>
+        <p className="text-xs text-slate-300 mt-0.5 font-bold uppercase tracking-wider">Asset status summary and operations pipeline</p>
       </div>
 
-      {/* KPI Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* KPI: Total Assets */}
-        <Card className="flex items-center gap-4 p-5 bg-gradient-to-br from-slate-900/60 to-slate-950/60">
-          <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-indigo-400 shadow-md">
-            <Package size={22} />
-          </div>
-          <div>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Assets</p>
-            <h3 className="text-2xl font-black text-slate-100 mt-0.5">{totalAssetsCount}</h3>
-          </div>
+      {/* Screen 2: 6 KPI Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        {/* KPI 1: Available */}
+        <Card className="flex flex-col justify-between p-6 h-28 hover:shadow-extruded-hover">
+          <p className="text-[10px] text-slate-300 font-extrabold uppercase tracking-wider">Available</p>
+          <h3 className="text-3xl font-black text-slate-100 mt-1">{availableAssetsCount}</h3>
         </Card>
 
-        {/* KPI: Available Assets */}
-        <Card className="flex items-center gap-4 p-5 bg-gradient-to-br from-slate-900/60 to-slate-950/60">
-          <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-emerald-400 shadow-md">
-            <CheckCircle size={22} />
-          </div>
-          <div>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Available Assets</p>
-            <h3 className="text-2xl font-black text-slate-100 mt-0.5">{availableAssetsCount}</h3>
-          </div>
+        {/* KPI 2: Allocated */}
+        <Card className="flex flex-col justify-between p-6 h-28 hover:shadow-extruded-hover">
+          <p className="text-[10px] text-slate-300 font-extrabold uppercase tracking-wider">Allocated</p>
+          <h3 className="text-3xl font-black text-slate-100 mt-1">{allocatedAssetsCount}</h3>
         </Card>
 
-        {/* KPI: Allocated Assets */}
-        <Card className="flex items-center gap-4 p-5 bg-gradient-to-br from-slate-900/60 to-slate-950/60">
-          <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-blue-400 shadow-md">
-            <CalendarRange size={22} />
-          </div>
-          <div>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Allocated Assets</p>
-            <h3 className="text-2xl font-black text-slate-100 mt-0.5">{allocatedAssetsCount}</h3>
-          </div>
+        {/* KPI 3: Under Maintenance */}
+        <Card className="flex flex-col justify-between p-6 h-28 hover:shadow-extruded-hover">
+          <p className="text-[10px] text-slate-300 font-extrabold uppercase tracking-wider">Under Maintenance</p>
+          <h3 className="text-3xl font-black text-slate-100 mt-1">{maintenanceCount}</h3>
         </Card>
 
-        {/* KPI: Maintenance */}
-        <Card className="flex items-center gap-4 p-5 bg-gradient-to-br from-slate-900/60 to-slate-950/60">
-          <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-orange-400 shadow-md">
-            <Wrench size={22} />
-          </div>
-          <div>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Active Maintenance</p>
-            <h3 className="text-2xl font-black text-slate-100 mt-0.5">{maintenanceCount}</h3>
-          </div>
+        {/* KPI 4: Active Bookings */}
+        <Card className="flex flex-col justify-between p-6 h-28 hover:shadow-extruded-hover">
+          <p className="text-[10px] text-slate-300 font-extrabold uppercase tracking-wider">Active Bookings</p>
+          <h3 className="text-3xl font-black text-slate-100 mt-1">{activeBookingsCount}</h3>
         </Card>
+
+        {/* KPI 5: Pending Transfers */}
+        <Card className="flex flex-col justify-between p-6 h-28 hover:shadow-extruded-hover">
+          <p className="text-[10px] text-slate-300 font-extrabold uppercase tracking-wider">Pending Transfers</p>
+          <h3 className="text-3xl font-black text-slate-100 mt-1">{pendingTransfersCount}</h3>
+        </Card>
+
+        {/* KPI 6: Upcoming Returns */}
+        <Card className="flex flex-col justify-between p-6 h-28 hover:shadow-extruded-hover">
+          <p className="text-[10px] text-slate-300 font-extrabold uppercase tracking-wider">Upcoming returns</p>
+          <h3 className="text-3xl font-black text-slate-100 mt-1">{upcomingReturnsCount}</h3>
+        </Card>
+
       </div>
 
-      {/* Overdue alert card banner if overdue returns exist */}
+      {/* Screen 2 Overdue Warning Banner */}
       {overdueCount > 0 && (
-        <div className="flex items-center justify-between p-4 rounded-xl border border-rose-500/20 bg-rose-950/10 text-rose-200 shadow-md">
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-rose-500/15 text-black shadow-extruded-sm border border-rose-500/20">
           <div className="flex items-center gap-3">
-            <AlertCircle className="text-rose-400 flex-shrink-0" size={20} />
-            <div className="text-xs">
-              <span className="font-bold">Overdue Returns Detected:</span> There are {overdueCount} assets currently overdue. Please review allocations and notify respective employees.
-            </div>
+            <AlertCircle className="text-rose-600 flex-shrink-0 animate-pulse animate-float" size={18} />
+            <span className="text-xs font-extrabold text-rose-700">
+              {overdueCount} assets overdue for return - flagged for follow-up
+            </span>
           </div>
-          <Link href="/allocation?tab=overdue" className="text-xs font-bold text-rose-400 hover:text-rose-300 transition-all flex items-center gap-1">
+          <Link href="/allocation?tab=overdue" className="text-xs font-black text-rose-700 hover:text-rose-900 transition-all flex items-center gap-1.5 underline underline-offset-2">
             <span>View list</span>
-            <ArrowUpRight size={14} />
+            <ArrowUpRight size={14} className="stroke-[3]" />
           </Link>
         </div>
       )}
 
-      {/* Mid sections: Charts and quick actions */}
+      {/* Screen 2 Action Buttons & Recent Activity List */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Quick Actions widget */}
-        <Card className="lg:col-span-1">
-          <h4 className="text-sm font-bold text-slate-100 mb-4 font-display">Quick Actions</h4>
-          <div className="grid grid-cols-2 gap-4">
-            {quickActions.map(act => {
-              const Icon = act.icon;
-              const textColor = act.color.split(' ')[0]; // E.g., text-indigo-600
-              return (
-                <Link 
-                  key={act.name} 
-                  href={act.path} 
-                  className={`
-                    p-4 rounded-2xl bg-slate-900 shadow-extruded flex flex-col justify-between h-[100px] transition-all duration-300 hover:shadow-extruded-hover hover:-translate-y-0.5 border-none group cursor-pointer
-                    ${textColor}
-                  `}
-                >
-                  <div className="w-8 h-8 rounded-full bg-slate-900 shadow-inset flex items-center justify-center text-slate-200 group-hover:text-indigo-600 transition-colors duration-300">
-                    <Icon size={16} className="transition-transform duration-300 group-hover:scale-110" />
-                  </div>
-                  <span className="text-xs font-bold text-slate-200 mt-2">{act.name}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </Card>
+        {/* Quick Actions (Screen 2: + register asset, Book resource, Raise requests) */}
+        <div className="lg:col-span-1 space-y-4">
+          <h4 className="text-sm font-bold text-slate-100 font-display pl-1">Quick Actions</h4>
+          <div className="flex flex-col gap-4">
+            
+            <Link 
+              href="/assets?action=new" 
+              className="flex items-center justify-center p-4 rounded-2xl bg-slate-900 shadow-extruded hover:shadow-extruded-hover hover:-translate-y-0.5 border-none text-xs font-bold text-slate-200 transition-all duration-300"
+            >
+              + register asset
+            </Link>
 
-        {/* Dynamic Chart SVG block */}
-        <Card className="lg:col-span-2 flex flex-col justify-between">
-          <div>
-            <h4 className="text-sm font-bold text-slate-300 mb-1">Asset Categories Distribution</h4>
-            <p className="text-[10px] text-slate-500 mb-4">Total breakdown of cataloged assets by category</p>
+            <Link 
+              href="/booking?action=new" 
+              className="flex items-center justify-center p-4 rounded-2xl bg-slate-900 shadow-extruded hover:shadow-extruded-hover hover:-translate-y-0.5 border-none text-xs font-bold text-slate-200 transition-all duration-300"
+            >
+              Book resource
+            </Link>
+
+            <Link 
+              href="/maintenance?action=new" 
+              className="flex items-center justify-center p-4 rounded-2xl bg-slate-900 shadow-extruded hover:shadow-extruded-hover hover:-translate-y-0.5 border-none text-xs font-bold text-slate-200 transition-all duration-300"
+            >
+              Raise requests
+            </Link>
+
           </div>
+        </div>
+
+        {/* Screen 2: Recent Activity List */}
+        <Card className="lg:col-span-2">
+          <h4 className="text-sm font-bold text-slate-100 mb-6 font-display">Recent Activity</h4>
           
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 py-2">
-            {/* Custom SVG Pie Chart */}
-            <div className="relative w-36 h-36">
-              <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
-                <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#1e293b" strokeWidth="3" />
-                
-                {/* Electronics Segment */}
-                <circle 
-                  cx="18" cy="18" r="15.915" fill="transparent" stroke="#6366f1" strokeWidth="4.2" 
-                  strokeDasharray={`${(electronicsCount/totalAssetsCount)*100} ${100 - (electronicsCount/totalAssetsCount)*100}`} 
-                  strokeDashoffset="0"
-                />
-                
-                {/* Furniture Segment */}
-                <circle 
-                  cx="18" cy="18" r="15.915" fill="transparent" stroke="#10b981" strokeWidth="4.2" 
-                  strokeDasharray={`${(furnitureCount/totalAssetsCount)*100} ${100 - (furnitureCount/totalAssetsCount)*100}`} 
-                  strokeDashoffset={`-${(electronicsCount/totalAssetsCount)*100}`}
-                />
-
-                {/* Vehicles Segment */}
-                <circle 
-                  cx="18" cy="18" r="15.915" fill="transparent" stroke="#f59e0b" strokeWidth="4.2" 
-                  strokeDasharray={`${(vehiclesCount/totalAssetsCount)*100} ${100 - (vehiclesCount/totalAssetsCount)*100}`} 
-                  strokeDashoffset={`-${((electronicsCount + furnitureCount)/totalAssetsCount)*100}`}
-                />
-
-                {/* Lab Segment */}
-                <circle 
-                  cx="18" cy="18" r="15.915" fill="transparent" stroke="#ec4899" strokeWidth="4.2" 
-                  strokeDasharray={`${(labsCount/totalAssetsCount)*100} ${100 - (labsCount/totalAssetsCount)*100}`} 
-                  strokeDashoffset={`-${((electronicsCount + furnitureCount + vehiclesCount)/totalAssetsCount)*100}`}
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xl font-black text-slate-100">{totalAssetsCount}</span>
-                <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Assets</span>
-              </div>
-            </div>
-
-            {/* Chart Legend */}
-            <div className="flex-1 space-y-2.5 w-full md:w-auto">
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-indigo-500" />
-                  <span className="text-slate-400">Electronics</span>
-                </div>
-                <span className="text-slate-200">{electronicsCount} assets ({((electronicsCount/totalAssetsCount)*100 || 0).toFixed(0)}%)</span>
-              </div>
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-emerald-500" />
-                  <span className="text-slate-400">Furniture</span>
-                </div>
-                <span className="text-slate-200">{furnitureCount} assets ({((furnitureCount/totalAssetsCount)*100 || 0).toFixed(0)}%)</span>
-              </div>
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-amber-500" />
-                  <span className="text-slate-400">Vehicles</span>
-                </div>
-                <span className="text-slate-200">{vehiclesCount} assets ({((vehiclesCount/totalAssetsCount)*100 || 0).toFixed(0)}%)</span>
-              </div>
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-pink-500" />
-                  <span className="text-slate-400">Lab Equipment</span>
-                </div>
-                <span className="text-slate-200">{labsCount} assets ({((labsCount/totalAssetsCount)*100 || 0).toFixed(0)}%)</span>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Bottom section: Recent activities log & pending actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Recent Activity Stream */}
-        <Card>
-          <h4 className="text-sm font-bold text-slate-300 mb-4">System Activity Stream</h4>
-          <div className="space-y-4">
-            {notifications.slice(0, 4).map(notif => (
-              <div key={notif.id} className="flex gap-3 text-xs border-b border-slate-800/40 pb-3 last:border-b-0 last:pb-0">
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center flex-shrink-0">
-                  <Clock size={14} />
-                </div>
-                <div>
-                  <h5 className="font-bold text-slate-200">{notif.title}</h5>
-                  <p className="text-slate-400 mt-0.5 leading-relaxed">{notif.description}</p>
-                  <span className="text-[9px] text-slate-600 block mt-1">{new Date(notif.created_at).toLocaleString()}</span>
-                </div>
+          <div className="space-y-4.5 pl-2 font-bold text-xs text-slate-200">
+            {recentActivitiesList.map((logStr, idx) => (
+              <div key={idx} className="flex items-start gap-3.5 pb-4 border-b border-slate-700/10 last:border-none last:pb-0">
+                {/* Visual tactile dot */}
+                <div className="w-2.5 h-2.5 rounded-full bg-indigo-600 mt-1.5 shadow-[0_0_8px_#6c63ff]" />
+                <span className="leading-relaxed font-semibold text-slate-100">{logStr}</span>
               </div>
             ))}
           </div>
         </Card>
 
-        {/* Operational Queues KPI card */}
-        <Card className="flex flex-col justify-between">
-          <div>
-            <h4 className="text-sm font-bold text-slate-300 mb-1">Operational Pipeline Queues</h4>
-            <p className="text-[10px] text-slate-500 mb-4">Pending actions waiting for authorization</p>
-          </div>
-
-          <div className="space-y-3.5">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-              <div className="flex items-center gap-2">
-                <ArrowLeftRight size={16} className="text-indigo-400" />
-                <span className="font-semibold text-slate-300">Pending Transfers</span>
-              </div>
-              <Badge content={`${pendingTransfersCount} Requests`} />
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-              <div className="flex items-center gap-2">
-                <Calendar size={16} className="text-emerald-400" />
-                <span className="font-semibold text-slate-300">Active Bookings</span>
-              </div>
-              <Badge content={`${activeBookingsCount} Ongoing`} />
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-              <div className="flex items-center gap-2">
-                <Wrench size={16} className="text-orange-400" />
-                <span className="font-semibold text-slate-300">Unresolved Maintenance</span>
-              </div>
-              <Badge content={`${maintenanceCount} Tasks`} />
-            </div>
-          </div>
-
-          <div className="border-t border-slate-800 pt-4 mt-4 flex items-center justify-between">
-            <span className="text-[10px] text-slate-500 font-semibold uppercase">Operational Health</span>
-            <span className="text-[10px] text-emerald-400 font-bold">100% Client-Side Sync Ready</span>
-          </div>
-        </Card>
       </div>
 
     </div>
