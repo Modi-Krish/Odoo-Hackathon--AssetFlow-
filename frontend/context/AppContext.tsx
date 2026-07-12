@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { loginAPI, signupAPI, getProfileAPI } from '../../services/auth';
+import { loginAPI, signupAPI, getProfileAPI } from '../services/auth';
 import {
   User,
   Department,
